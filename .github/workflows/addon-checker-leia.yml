@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - 'kodi-repo'
-      - 'kodi-leia'
+      - 'kodi-leia*'
 
 jobs:
   check-addon:
