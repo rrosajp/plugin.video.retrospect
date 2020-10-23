@@ -236,6 +236,7 @@
                 </setting>
             </group>
             <group id="2" label="30060">
+                <!-- start of channel selection -->
                 <setting id="show_other" type="boolean" label="30300" help="">
                     <level>0</level>
                     <default>true</default>
@@ -291,6 +292,7 @@
                     <default>true</default>
                     <control type="toggle"/>
                 </setting>
+                <!-- end of channel selection -->
             </group>
         </category>
         <category id="channel settings" label="30032" help="">

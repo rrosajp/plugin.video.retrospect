@@ -1098,6 +1098,10 @@ class AddonSettings(object):
 
         # Then we read the original file
         filename_template = os.path.join(config.rootDir, "resources", "data", "settings_template.xml")
+        if not os.path.isfile(filename_template):
+            Logger.debug("No template present in '%s'. Skipping generation.", filename_template)
+            return
+
         # noinspection PyArgumentEqualDefault
         with io.open(filename_template, "r", encoding="utf-8") as fp:
             contents = fp.read()
@@ -1307,7 +1311,7 @@ class AddonSettings(object):
             return
 
         # First we create a new bit of settings file.
-        channel_xml = '        <!-- start of channel selection -->\n'
+        channel_xml = '<!-- start of channel selection -->\n'
 
         # the distinct list of languages from the channels
         languages = [c.language for c in channels]
@@ -1322,13 +1326,18 @@ class AddonSettings(object):
 
         language_lookup_sorted_keys = sorted(language_lookup.keys(), key=lambda k: k or "")
 
+        template = "%s                <setting id=\"%s\" type=\"boolean\" label=\"%s\" help=\"\">\n" \
+                   "                    <level>0</level>\n" \
+                   "                    <default>true</default>\n" \
+                   "                    <control type=\"toggle\"/>\n" \
+                   "                </setting>\n"
+
         for language in language_lookup_sorted_keys:
-            channel_xml = '%s        <setting id="%s" type="bool" label="%s" subsetting="false" default="true" />\n' \
-                         % (channel_xml, language_lookup[language][0], language_lookup[language][1])
+            channel_xml = template % (channel_xml, language_lookup[language][0], language_lookup[language][1])
 
         begin = contents[:contents.find('<!-- start of channel selection -->')].strip()
         end = contents[contents.find('<!-- end of channel selection -->'):].strip()
-        contents = "%s\n    \n%s        %s" % (begin, channel_xml, end)
+        contents = "%s\n                %s                %s" % (begin, channel_xml, end)
         return contents
 
     @staticmethod

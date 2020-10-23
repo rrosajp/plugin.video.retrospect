@@ -1,74 +1,805 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<!-- more info in GUIDialogAddonSettings -->
-<settings>
-    <setting id="application_key" default="" />
-
-    <category id="general" label="30009">
-        <setting id="cloud_sync_enabled" default="true" />
-        <setting id="stream_bitrate_limit" type="select" label="30020" default="0" values="0|100|250|500|750|1000|1500|2000|2500|4000|8000|20000" />
-        <setting id="show_subtitles" type="bool" label="30021" default="true" />
-        <setting id="list_limit" type="enum" label="30026" default="5" lvalues="30074|30199|30200|30201|30202|30203|30204|30205" />
-        <setting id="show_cloaked_items" type="bool" label="30095" default="false" />
-        <setting id="use_adaptive_addon" type="bool" label="30571" default="true" enable="System.HasAddon(inputstream.adaptive)" />
-        <setting id="adaptive_addon_settings" subsetting="true" type="action" label="30578" action="Addon.OpenSettings(inputstream.adaptive)" option="close" enable="System.HasAddon(inputstream.adaptive)" visible="eq(-1,true)" />
-        <setting id="widevine_install" subsetting="true" type="action" label="30532" option="close" action="RunScript(special://home/addons/plugin.video.retrospect/menu_install_widevine.py,plugin.video.retrospect)" enable="System.HasAddon(script.module.inputstreamhelper)" visible="eq(-2,true)"/>
-
-        <setting type="lsep" label="30089" />
-        <!-- we need the option="close" here to make sure we don't overwrite settings that were
-             already done while updating the settings from the script -->
-        <setting id="set_pin" label="30091" type="action" action="RunScript(plugin.video.retrospect, 0, ?action=changepin&amp;tabfocus=100&amp;settingfocus=209)" option="close" />
-        <setting id="reset_vault" label="30092" type="action" action="RunScript(plugin.video.retrospect, 0, ?action=resetvault&amp;tabfocus=100&amp;settingfocus=210)" option="close" />
-        <setting id="pin_label" type="text" label="30090" enable="false" />
-
-        <setting type="lsep" label="30046" />
-        <setting id="show_drm_warning" type="bool" label="30019" enable="true" default="true" />
-        <setting id="hide_drm" type="bool" label="30080" enable="true" default="false" />
-        <setting id="hide_premium" type="bool" label="30081" enable="true" default="false" />
-        <setting id="hide_types" type="enum" label="30082" lvalues="30083|30084" default="1" />
-        <setting id="geo_region" type="select" label="30085" lvalues="30074|30306|30309|30308|30307|30303|30304|30301|30305|30302" />
-        <setting id="geo_label" type="text" label="30073" enable="false" />
-    </category>
-
-    <category id="channels" label="30040">
-        <setting id="show_categories" type="bool" label="30067" default="true" />
-        <setting id="hide_first_time_message" type="bool" label="30570" default="false" />
-        <setting id="show_favourites" type="bool" label="30041" default="false" />
-
-        <setting type="lsep" label="30060" />
-        <!--<setting type="action" label="30598" action="RunScript(special://home/addons/plugin.video.retrospect/menu_enable.py)" option="close" />-->
-        <!-- start of channel selection -->
-        <!-- This is just a template and should be replaced after the first run -->
-        <!-- end of channel selection -->
-    </category>
-
-    <category id="channelsettings" label="30032">
-        <setting type="lsep" label="30063" />
-        <!-- start of active channels -->
-        <!-- This is just a template and should be replaced after the first run -->
-        <!-- end of active channels -->
-
-        <setting type="lsep" label="30032" />
-        <setting id="channel_00000000-0000-0000-0000-000000000000_none" label="30034" type="text" enable="false" visible="eq(%config_channel%,)" />
-
-        <!-- begin of channel settings -->
-        <!-- This is just a template and should be replaced after the first run -->
-        <!-- end of channel settings -->
-    </category>
-
-    <category id="advancedsettings" label="30055">
-        <setting id="auto_run" type="bool" label="30027" default="false" />
-        <setting id="folders_as_video" type="bool" label="30087" default="false" />
-        <setting id="empty_folder" type="select" label="30075" default="2" lvalues="30076|30077|30078" />
-        <setting id="folder_prefix" type="text" label="30043" default="" />
-        <setting id="hide_fanart" type="bool" label="30086" default="false" />
-        <setting id="use_thumbs_as_fanart" type="bool" label="30088" default="false" />
-        <setting id="ignore_ssl_errors" type="bool" label="30569" default="false" />
-        <setting id="http_cache" type="bool" label="30031" default="true" />
-        <setting id="cleanup_retrospect" type="action" label="30604" action="RunScript(plugin.video.retrospect, 0, ?action=cleanup)"  option="close" />
-        <setting id="minimum_notification_level" label="30606" type="enum" lvalues="30607|30608|30609" default="0" />
-
-        <setting type="lsep" label="30098" />
-        <setting id="log_level" type="enum" label="30048" values="Trace|Debug|Info" default="2" />
-        <setting id="send_log" type="action" label="30598" action="RunScript(plugin.video.retrospect, 0, ?action=postlog)" option="close" visible="eq(-1,0)|eq(-1,1)" />
-    </category>
+<?xml version="1.0" ?>
+<settings version="1">
+    <section id="plugin.video.retrospect">
+        <category id="general" label="30009" help="">
+            <group id="1">
+                <setting id="show_subtitles" type="boolean" label="30021" help="">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="stream_bitrate_limit" type="string" label="30020" help="">
+                    <level>1</level>
+                    <default>0</default>
+                    <constraints>
+                        <options>
+                            <option>0</option>
+                            <option>100</option>
+                            <option>250</option>
+                            <option>500</option>
+                            <option>750</option>
+                            <option>1000</option>
+                            <option>1500</option>
+                            <option>2000</option>
+                            <option>2500</option>
+                            <option>4000</option>
+                            <option>8000</option>
+                            <option>20000</option>
+                        </options>
+                    </constraints>
+                    <control type="list" format="string">
+                        <heading>30020</heading>
+                    </control>
+                </setting>
+                <setting id="show_cloaked_items" type="boolean" label="30095" help="">
+                    <level>2</level>
+                    <default>false</default>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="list_limit" type="integer" label="30026" help="">
+                    <level>2</level>
+                    <default>5</default>
+                    <constraints>
+                        <options>
+                            <option label="30074">0</option>
+                            <option label="30199">1</option>
+                            <option label="30200">2</option>
+                            <option label="30201">3</option>
+                            <option label="30202">4</option>
+                            <option label="30203">5</option>
+                            <option label="30204">6</option>
+                            <option label="30205">7</option>
+                        </options>
+                    </constraints>
+                    <control type="spinner" format="string"/>
+                </setting>
+                <setting id="use_adaptive_addon" type="boolean" label="30571" help="">
+                    <level>3</level>
+                    <default>true</default>
+                    <dependencies>
+                        <dependency type="enable">
+                            <condition on="property" name="InfoBool">System.HasAddon(inputstream.adaptive)</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="adaptive_addon_settings" type="action" label="30578" help="" parent="use_adaptive_addon">
+                    <level>3</level>
+                    <data>Addon.OpenSettings(inputstream.adaptive)</data>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="enable">
+                            <condition on="property" name="InfoBool">System.HasAddon(inputstream.adaptive)</condition>
+                        </dependency>
+                        <dependency type="visible">
+                            <condition operator="is" setting="use_adaptive_addon">true</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                </setting>
+                <setting id="widevine_install" type="action" label="30532" help="" parent="use_adaptive_addon">
+                    <level>3</level>
+                    <data>RunScript(special://home/addons/plugin.video.retrospect/menu_install_widevine.py,plugin.video.retrospect)</data>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="enable">
+                            <condition on="property" name="InfoBool">System.HasAddon(script.module.inputstreamhelper)</condition>
+                        </dependency>
+                        <dependency type="visible">
+                            <condition operator="is" setting="use_adaptive_addon">true</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                </setting>
+            </group>
+            <group id="2" label="30089">
+                <setting id="set_pin" type="action" label="30091" help="">
+                    <level>0</level>
+                    <data>RunScript(plugin.video.retrospect, 0, ?action=changepin&amp;tabfocus=100&amp;settingfocus=209)</data>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                </setting>
+                <setting id="reset_vault" type="action" label="30092" help="">
+                    <level>2</level>
+                    <data>RunScript(plugin.video.retrospect, 0, ?action=resetvault&amp;tabfocus=100&amp;settingfocus=210)</data>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                </setting>
+                <setting id="pin_label" type="string" label="30090" help="">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="enable">
+                            <condition on="property" name="InfoBool">false</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="edit" format="string">
+                        <heading>30090</heading>
+                    </control>
+                </setting>
+            </group>
+            <group id="3" label="30046">
+                <setting id="show_drm_warning" type="boolean" label="30019" help="">
+                    <level>1</level>
+                    <default>true</default>
+                    <dependencies>
+                        <dependency type="enable">
+                            <condition on="property" name="InfoBool">true</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="hide_drm" type="boolean" label="30080" help="">
+                    <level>0</level>
+                    <default>false</default>
+                    <dependencies>
+                        <dependency type="enable">
+                            <condition on="property" name="InfoBool">true</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="hide_premium" type="boolean" label="30081" help="">
+                    <level>0</level>
+                    <default>false</default>
+                    <dependencies>
+                        <dependency type="enable">
+                            <condition on="property" name="InfoBool">true</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="hide_types" type="integer" label="30082" help="">
+                    <level>1</level>
+                    <default>1</default>
+                    <constraints>
+                        <options>
+                            <option label="30083">0</option>
+                            <option label="30084">1</option>
+                        </options>
+                    </constraints>
+                    <control type="spinner" format="string"/>
+                </setting>
+                <setting id="geo_region" type="integer" label="30085" help="">
+                    <level>3</level>
+                    <default>0</default>
+                    <constraints>
+                        <options>
+                            <option label="30074">0</option>
+                            <option label="30306">1</option>
+                            <option label="30309">2</option>
+                            <option label="30308">3</option>
+                            <option label="30307">4</option>
+                            <option label="30303">5</option>
+                            <option label="30304">6</option>
+                            <option label="30301">7</option>
+                            <option label="30305">8</option>
+                            <option label="30302">9</option>
+                        </options>
+                    </constraints>
+                    <control type="list" format="string">
+                        <heading>30085</heading>
+                    </control>
+                </setting>
+                <setting id="geo_label" type="string" label="30073" help="">
+                    <level>3</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="enable">
+                            <condition on="property" name="InfoBool">false</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="edit" format="string">
+                        <heading>30073</heading>
+                    </control>
+                </setting>
+            </group>
+        </category>
+        <category id="channels" label="30040" help="">
+            <group id="1">
+                <setting id="show_categories" type="boolean" label="30067" help="">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="hide_first_time_message" type="boolean" label="30570" help="">
+                    <level>1</level>
+                    <default>false</default>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="show_favourites" type="boolean" label="30041" help="">
+                    <level>0</level>
+                    <default>false</default>
+                    <control type="toggle"/>
+                </setting>
+            </group>
+            <group id="2" label="30060">
+                <!-- start of channel selection -->
+                <!-- This is just a template and should be replaced after the first run -->
+                <!-- end of channel selection -->
+            </group>
+        </category>
+        <category id="channel settings" label="30032" help="">
+            <group id="1" label="30063">
+                <setting id="config_channel" type="string" label="30040" help="">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <options>
+                            <option>NPO Start</option>
+                            <option>RTL XL [RTL 4,5,7 &amp; 8]</option>
+                            <option>Kijk.nl</option>
+                            <option>Vier</option>
+                            <option>Vijf</option>
+                            <option>Zes</option>
+                            <option>VTM.be</option>
+                            <option>Stievie</option>
+                            <option>VRT NU</option>
+                            <option>Ketnet</option>
+                            <option>SVT Play</option>
+                            <option>Kanal 5</option>
+                            <option>Dplay [Sverige]</option>
+                            <option>Kanal 9</option>
+                            <option>Kanal 11</option>
+                        </options>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="list" format="string">
+                        <heading>30040</heading>
+                    </control>
+                </setting>
+            </group>
+            <group id="2" label="30032">
+                <setting id="channel_00000000-0000-0000-0000-000000000000_none" type="string" label="30034" help="">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="enable">
+                            <condition on="property" name="InfoBool">false</condition>
+                        </dependency>
+                        <dependency type="visible">
+                            <condition operator="is" setting="config_channel"/>
+                        </dependency>
+                    </dependencies>
+                    <control type="edit" format="string">
+                        <heading>30034</heading>
+                    </control>
+                </setting>
+                <setting id="channel_756FFEC8-B6BA-11E0-898D-1F434824019B_hls_over_dash" type="boolean" label="30099" help="">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="config_channel">Ketnet</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="channel_271456ED-6E84-4FAB-A7AF-77A1C669F942_hls_over_dash" type="boolean" label="30099" help="">
+                    <level>0</level>
+                    <default>false</default>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="config_channel">Kijk.nl</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="channel_ED8FDB9C-3870-11E2-B1C2-192A6288709B_username" type="string" label="30094" help="">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="config_channel">NPO Start</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="edit" format="string">
+                        <heading>30094</heading>
+                    </control>
+                </setting>
+                <setting id="channel_ED8FDB9C-3870-11E2-B1C2-192A6288709B_password_set" type="action" label="30093" help="">
+                    <level>0</level>
+                    <data>RunScript(plugin.video.retrospect, 0, ?action=encryptsetting&amp;settingid=channel_ED8FDB9C-3870-11E2-B1C2-192A6288709B_password&amp;settingname=NPO.nl password&amp;tabfocus=102)</data>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="config_channel">NPO Start</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                </setting>
+                <setting id="channel_ED8FDB9C-3870-11E2-B1C2-192A6288709B_password" type="string" help="">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="config_channel">NPO Start</condition>
+                        </dependency>
+                    </dependencies>
+                    <visible>false</visible>
+                    <control type="edit" format="string">
+                        <heading/>
+                    </control>
+                </setting>
+                <setting id="channel_15D92364-42F4-11DD-AF9B-7BFF55D89593_rtlxl_username" type="string" label="30094" help="">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="config_channel">RTL XL [RTL 4</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="edit" format="string">
+                        <heading>30094</heading>
+                    </control>
+                </setting>
+                <setting id="channel_15D92364-42F4-11DD-AF9B-7BFF55D89593_rtlxl_password" type="string" help="">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="config_channel">RTL XL [RTL 4</condition>
+                        </dependency>
+                    </dependencies>
+                    <visible>false</visible>
+                    <control type="edit" format="string">
+                        <heading/>
+                    </control>
+                </setting>
+                <setting id="channel_15D92364-42F4-11DD-AF9B-7BFF55D89593_rtlxl_password_set" type="action" label="30093" help="">
+                    <level>0</level>
+                    <data>RunScript(plugin.video.retrospect, 0, ?action=encryptsetting&amp;settingid=channel_15D92364-42F4-11DD-AF9B-7BFF55D89593_rtlxl_password&amp;settingname=RTL XL&amp;tabfocus=102)</data>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="config_channel">RTL XL [RTL 4</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                </setting>
+                <setting id="dplayse_username" type="string" label="30094" help="">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <or>
+                                <condition operator="is" setting="config_channel">Kanal 11</condition>
+                                <condition operator="is" setting="config_channel">Kanal 9</condition>
+                                <condition operator="is" setting="config_channel">Dplay [Sverige]</condition>
+                                <condition operator="is" setting="config_channel">Kanal 5</condition>
+                            </or>
+                        </dependency>
+                    </dependencies>
+                    <control type="edit" format="string">
+                        <heading>30094</heading>
+                    </control>
+                </setting>
+                <setting id="dplayse_password_set" type="action" label="30093" help="">
+                    <level>0</level>
+                    <data>RunScript(plugin.video.retrospect, 0, ?action=encryptsetting&amp;settingid=dplayse_password&amp;settingname=Dplay password&amp;tabfocus=102)</data>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <or>
+                                <condition operator="is" setting="config_channel">Kanal 11</condition>
+                                <condition operator="is" setting="config_channel">Kanal 9</condition>
+                                <condition operator="is" setting="config_channel">Dplay [Sverige]</condition>
+                                <condition operator="is" setting="config_channel">Kanal 5</condition>
+                            </or>
+                        </dependency>
+                    </dependencies>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                </setting>
+                <setting id="dplayse_password" type="string" help="">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <or>
+                                <condition operator="is" setting="config_channel">Kanal 11</condition>
+                                <condition operator="is" setting="config_channel">Kanal 9</condition>
+                                <condition operator="is" setting="config_channel">Dplay [Sverige]</condition>
+                                <condition operator="is" setting="config_channel">Kanal 5</condition>
+                            </or>
+                        </dependency>
+                    </dependencies>
+                    <visible>false</visible>
+                    <control type="edit" format="string">
+                        <heading/>
+                    </control>
+                </setting>
+                <setting id="channel_3AF9C61E-88B2-11E1-A03F-08F6BAE59B18_show_programs_folder" type="boolean" label="30582" help="">
+                    <level>0</level>
+                    <default>true</default>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="config_channel">SVT Play</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="viervijfzes_username" type="string" label="30094" help="">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <or>
+                                <condition operator="is" setting="config_channel">Zes</condition>
+                                <condition operator="is" setting="config_channel">Vijf</condition>
+                                <condition operator="is" setting="config_channel">Vier</condition>
+                            </or>
+                        </dependency>
+                    </dependencies>
+                    <control type="edit" format="string">
+                        <heading>30094</heading>
+                    </control>
+                </setting>
+                <setting id="viervijfzes_password_set" type="action" label="30093" help="">
+                    <level>0</level>
+                    <data>RunScript(plugin.video.retrospect, 0, ?action=encryptsetting&amp;settingid=viervijfzes_password&amp;settingname=Vier/Vijf/Zes.be password&amp;tabfocus=102)</data>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <or>
+                                <condition operator="is" setting="config_channel">Zes</condition>
+                                <condition operator="is" setting="config_channel">Vijf</condition>
+                                <condition operator="is" setting="config_channel">Vier</condition>
+                            </or>
+                        </dependency>
+                    </dependencies>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                </setting>
+                <setting id="viervijfzes_password" type="string" help="">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <or>
+                                <condition operator="is" setting="config_channel">Zes</condition>
+                                <condition operator="is" setting="config_channel">Vijf</condition>
+                                <condition operator="is" setting="config_channel">Vier</condition>
+                            </or>
+                        </dependency>
+                    </dependencies>
+                    <visible>false</visible>
+                    <control type="edit" format="string">
+                        <heading/>
+                    </control>
+                </setting>
+                <setting id="viervijfzes_refresh_token" type="string" help="">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <or>
+                                <condition operator="is" setting="config_channel">Zes</condition>
+                                <condition operator="is" setting="config_channel">Vijf</condition>
+                                <condition operator="is" setting="config_channel">Vier</condition>
+                            </or>
+                        </dependency>
+                    </dependencies>
+                    <visible>false</visible>
+                    <control type="edit" format="string">
+                        <heading/>
+                    </control>
+                </setting>
+                <setting id="channel_F530A9EC-3C0D-49B6-96C2-480273417460_username" type="string" label="30094" help="">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="config_channel">VRT NU</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="edit" format="string">
+                        <heading>30094</heading>
+                    </control>
+                </setting>
+                <setting id="channel_F530A9EC-3C0D-49B6-96C2-480273417460_password_set" type="action" label="30093" help="">
+                    <level>0</level>
+                    <data>RunScript(plugin.video.retrospect, 0, ?action=encryptsetting&amp;settingid=channel_F530A9EC-3C0D-49B6-96C2-480273417460_password&amp;settingname=VRT NU password&amp;tabfocus=102)</data>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="config_channel">VRT NU</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                </setting>
+                <setting id="channel_F530A9EC-3C0D-49B6-96C2-480273417460_password" type="string" help="">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="config_channel">VRT NU</condition>
+                        </dependency>
+                    </dependencies>
+                    <visible>false</visible>
+                    <control type="edit" format="string">
+                        <heading/>
+                    </control>
+                </setting>
+                <setting id="channel_F530A9EC-3C0D-49B6-96C2-480273417460_hls_over_dash" type="boolean" label="30099" help="">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <condition operator="is" setting="config_channel">VRT NU</condition>
+                        </dependency>
+                    </dependencies>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="mediaan_username" type="string" label="30094" help="">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <or>
+                                <condition operator="is" setting="config_channel">Stievie</condition>
+                                <condition operator="is" setting="config_channel">VTM.be</condition>
+                            </or>
+                        </dependency>
+                    </dependencies>
+                    <control type="edit" format="string">
+                        <heading>30094</heading>
+                    </control>
+                </setting>
+                <setting id="mediaan_password" type="string" help="">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <or>
+                                <condition operator="is" setting="config_channel">Stievie</condition>
+                                <condition operator="is" setting="config_channel">VTM.be</condition>
+                            </or>
+                        </dependency>
+                    </dependencies>
+                    <visible>false</visible>
+                    <control type="edit" format="string">
+                        <heading/>
+                    </control>
+                </setting>
+                <setting id="mediaan_password_set" type="action" label="30093" help="">
+                    <level>0</level>
+                    <data>RunScript(plugin.video.retrospect, 0, ?action=encryptsetting&amp;settingid=mediaan_password&amp;settingname=Mediaan Wachtwoord.be&amp;tabfocus=102)</data>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <or>
+                                <condition operator="is" setting="config_channel">Stievie</condition>
+                                <condition operator="is" setting="config_channel">VTM.be</condition>
+                            </or>
+                        </dependency>
+                    </dependencies>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                </setting>
+                <setting id="mediaan_signature" type="string" help="">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <or>
+                                <condition operator="is" setting="config_channel">Stievie</condition>
+                                <condition operator="is" setting="config_channel">VTM.be</condition>
+                            </or>
+                        </dependency>
+                    </dependencies>
+                    <visible>false</visible>
+                    <control type="edit" format="string">
+                        <heading/>
+                    </control>
+                </setting>
+            </group>
+        </category>
+        <category id="advanced" label="30055" help="">
+            <group id="1">
+                <setting id="auto_run" type="boolean" label="30027" help="">
+                    <level>0</level>
+                    <default>false</default>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="folders_as_video" type="boolean" label="30087" help="">
+                    <level>2</level>
+                    <default>false</default>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="empty_folder" type="integer" label="30075" help="">
+                    <level>2</level>
+                    <default>2</default>
+                    <constraints>
+                        <options>
+                            <option label="30076">0</option>
+                            <option label="30077">1</option>
+                            <option label="30078">2</option>
+                        </options>
+                    </constraints>
+                    <control type="list" format="string">
+                        <heading>30075</heading>
+                    </control>
+                </setting>
+                <setting id="folder_prefix" type="string" label="30043" help="">
+                    <level>3</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string">
+                        <heading>30043</heading>
+                    </control>
+                </setting>
+                <setting id="hide_fanart" type="boolean" label="30086" help="">
+                    <level>1</level>
+                    <default>false</default>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="use_thumbs_as_fanart" type="boolean" label="30088" help="">
+                    <level>1</level>
+                    <default>false</default>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="minimum_notification_level" type="integer" label="30606" help="">
+                    <level>2</level>
+                    <default>0</default>
+                    <constraints>
+                        <options>
+                            <option label="30607">0</option>
+                            <option label="30608">1</option>
+                            <option label="30609">2</option>
+                        </options>
+                    </constraints>
+                    <control type="spinner" format="string"/>
+                </setting>
+                <setting id="ignore_ssl_errors" type="boolean" label="30569" help="">
+                    <level>3</level>
+                    <default>false</default>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="http_cache" type="boolean" label="30031" help="">
+                    <level>2</level>
+                    <default>true</default>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="cleanup_retrospect" type="action" label="30604" help="">
+                    <level>2</level>
+                    <data>RunScript(plugin.video.retrospect, 0, ?action=cleanup)</data>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                </setting>
+            </group>
+            <group id="2" label="30098">
+                <setting id="log_level" type="integer" label="30048" help="">
+                    <level>0</level>
+                    <default>2</default>
+                    <constraints>
+                        <options>
+                            <option label="Trace">0</option>
+                            <option label="Debug">1</option>
+                            <option label="Info">2</option>
+                        </options>
+                    </constraints>
+                    <control type="spinner" format="string"/>
+                </setting>
+                <setting id="send_log" type="action" label="30598" help="">
+                    <level>0</level>
+                    <data>RunScript(plugin.video.retrospect, 0, ?action=postlog)</data>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <dependencies>
+                        <dependency type="visible">
+                            <or>
+                                <condition operator="is" setting="log_level">0</condition>
+                                <condition operator="is" setting="log_level">1</condition>
+                            </or>
+                        </dependency>
+                    </dependencies>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                </setting>
+            </group>
+        </category>
+    </section>
 </settings>
