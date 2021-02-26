@@ -22,6 +22,85 @@ from resources.lib.mediaitem import MediaItem
 from resources.lib.xbmcwrapper import XbmcWrapper
 
 
+class Route(object):
+    def __init__(self):
+        pass
+
+    class RouteParser(object):
+        def __init__(self, url, name=None, preprocessor=None,
+                         parser=None, creator=None, updater=None,
+                         postprocessor=None,
+                         json=False, match_type=ParserData.MatchStart, requires_logon=False):
+            """ Adds a DataParser to the handlers dictionary
+
+            :param preprocessor:                    The pre-processor called
+            :type preprocessor:                     (str) -> (str|JsonHelper,list[MediaItem])
+
+            :param str name:                        The name of the DataParser
+            :param str url:                         The URLs that triggers these handlers
+            :param str|list[str|int|tuple] parser:  The parser (regex or json).
+
+            :param creator:                         The creator called with the results from the parser
+            :type creator:                          (list[str]|dict) -> MediaItem|None
+
+            :param updater:                         The updater called for updating a item
+            :type updater:                          MediaItem -> MediaItem
+
+            :param postprocessor:                   The post-processor called
+            :type postprocessor:                    (JsonHelper|str,list[MediaItems]) -> list[MediaItems]
+
+            :param bool json:                       Indication whether the parsers are JSON (True) or Regex (False)
+            :param str match_type:                  The type of matching to use
+            :param bool requires_logon:             Do we need to be logged on?
+
+            If a tuple (key,value,index) is used in the `parser` it will cause a list to be filtered
+            based on the key and its corresponding value. if the index is a number, from the resulting
+            list that index will be used, otherwise the full list will be used.
+
+            """
+
+            self.name = name
+            self.url = url
+            self.preprocessor = preprocessor
+
+    class PreProcessor(RouteParser):
+        def __init__(self, url, name, match_type=ParserData.MatchStart, requires_logon=False):
+            """ Adds a DataParser to the handlers dictionary
+
+            :param str url:                         The URLs that triggers these handlers
+            :param str name:                        The name of the DataParser
+            :param str match_type:                  The type of matching to use
+            :param bool requires_logon:             Do we need to be logged on?
+
+            If a tuple (key,value,index) is used in the `parser` it will cause a list to be filtered
+            based on the key and its corresponding value. if the index is a number, from the resulting
+            list that index will be used, otherwise the full list will be used.
+
+            """
+
+            Route.RouteParser.__init__(self, url, name,
+                                       match_type=match_type, requires_logon=requires_logon)
+
+            Logger.error("Registering '%s'-route for  %s", name, url)
+
+        def __call__(self, preprocessor):
+            """ Executes a pre-processor
+            :param preprocessor:                    The pre-processor called
+            :type preprocessor:                     (str) -> (str|JsonHelper,list[MediaItem])
+
+            :return:
+            :rtype: (str) -> (str|JsonHelper,list[MediaItem])
+
+            """
+
+            Logger.error("Registering '%s' for '%s'", preprocessor, self.name)
+            self.preprocessor = preprocessor
+            return preprocessor
+
+
+route = Route()
+
+
 class Channel(chn_class.Channel):
     """
     main class from which all channels inherit
@@ -325,6 +404,7 @@ class Channel(chn_class.Channel):
 
         return new_data, items
 
+    @route.PreProcessor(url="/test", name="just a name")
     def get_initial_folder_items(self, data):
         """ Creates the initial folder items for this channel.
 
