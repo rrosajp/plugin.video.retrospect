@@ -79,7 +79,7 @@ class FolderAction(AddonAction):
                 )
 
             related_items = []
-            related = LanguageHelper.get_localized_string(LanguageHelper.Related)
+            more_title = LanguageHelper.get_localized_string(LanguageHelper.Related)
 
             for media_item in media_items:  # type: MediaItem
                 self.__update_artwork(media_item, self.__channel, use_thumbs_as_fanart)
@@ -112,9 +112,10 @@ class FolderAction(AddonAction):
                         item=media_item.related_item, store_id=parent_guid
                     )
                     related_url = "Container.Update(%s)" % (related_url, )
+                    related_title = "{} '{}'".format(more_title, media_item.related_item.title)
 
                     Logger.debug("Adding related item: %s", media_item.related_item)
-                    context_menu_items.insert(0, (related, related_url))
+                    context_menu_items.insert(0, (related_title, related_url))
 
                     # Make sure it is added to the store. Only then we can retrieve it later.
                     related_items.append(media_item.related_item)
