@@ -47,6 +47,7 @@ class LanguageHelper(object):
     Sunday = 30196
 
     ChannelAdaptiveMode = 30581
+    Related = 30584
     LoginErrorTitle = 30012
     LoginErrorText = 30013
 

@@ -65,6 +65,7 @@ class MediaItem:
         self.tv_show_title = tv_show_title
         self.url = url
         self.actionUrl = None
+        self.related_item = None
 
         self.description = ""
         self.thumb = ""                           # : The thumbnail (16:9, min 520x293)
@@ -257,6 +258,21 @@ class MediaItem:
         """
 
         return label in self.__infoLabels
+
+    def set_related(self, title, url, content_type, media_type=mediatype.FOLDER):
+        """ Sets information for the related item for the context menu.
+
+        :param str title:
+        :param str url:
+        :param str content_type:
+        :param str media_type:
+
+        :returns: The new related item
+        :rtype: MediaItem
+        """
+
+        self.related_item = FolderItem(title, url, content_type, media_type)
+        return self.related_item
 
     def set_artwork(self, icon=None, thumb=None, fanart=None, poster=None):
         """ Set the artwork for this MediaItem.

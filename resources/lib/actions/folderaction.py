@@ -78,6 +78,9 @@ class FolderAction(AddonAction):
                     selected_item.title if selected_item.content_type == contenttype.EPISODES else None
                 )
 
+            related_items = []
+            related = LanguageHelper.get_localized_string(LanguageHelper.Related)
+
             for media_item in media_items:  # type: MediaItem
                 self.__update_artwork(media_item, self.__channel, use_thumbs_as_fanart)
                 # Set the TV Show title if it was set before, but don't override existing values.
@@ -102,6 +105,20 @@ class FolderAction(AddonAction):
 
                 # Get the context menu items
                 context_menu_items = self._get_context_menu_items(self.__channel, item=media_item)
+                if media_item.related_item:
+                    # Generate an URL
+                    related_url = self.parameter_parser.create_action_url(
+                        self.__channel, action=action.LIST_FOLDER,
+                        item=media_item.related_item, store_id=parent_guid
+                    )
+                    related_url = "Container.Update(%s)" % (related_url, )
+
+                    Logger.debug("Adding related item: %s", media_item.related_item)
+                    context_menu_items.insert(0, (related, related_url))
+
+                    # Make sure it is added to the store. Only then we can retrieve it later.
+                    related_items.append(media_item.related_item)
+
                 kodi_item.addContextMenuItems(context_menu_items)
 
                 # Get the action URL
@@ -120,7 +137,8 @@ class FolderAction(AddonAction):
             watcher.lap("items send to Kodi")
 
             if ok and parent_guid is not None:
-                self.parameter_parser.pickler.store_media_items(parent_guid, selected_item, media_items)
+                self.parameter_parser.pickler.store_media_items(
+                    parent_guid, selected_item, media_items + related_items)
 
             watcher.stop()
 
