@@ -261,7 +261,10 @@ class Logger:
             return
 
         # create old.log file
-        clean_up_message = "{} :: Cleaning up logfile: {}".format(self.applicationName, self.logFileName)
+        clean_up_message = (
+            f"{self.applicationName} :: Cleaning up logfile: {self.logFileName}"
+        )
+
         if self.logDual:
             self.dualLog(clean_up_message, 1)
         else:
@@ -274,7 +277,7 @@ class Logger:
             was_open = False
 
         (file_name, extension) = os.path.splitext(self.logFileName)
-        old_file_name = "%s.old%s" % (file_name, extension)
+        old_file_name = f"{file_name}.old{extension}"
         if os.path.exists(self.logFileName):
             if os.path.exists(old_file_name):
                 os.remove(old_file_name)
@@ -316,13 +319,13 @@ class Logger:
 
             # Fill the message with it's content
             if len(args) > 0:
-                msg = msg % args
+                msg %= args
 
             # get frame information
             (source_file, source_line_number) = self.__find_caller()
 
             # get time information
-            timestamp = datetime.datetime.today().strftime(self.timeFormat)
+            timestamp = datetime.datetime.now().strftime(self.timeFormat)
 
             # check for exception info, if present, add to end of string:
             # noinspection PyArgumentList
@@ -335,7 +338,7 @@ class Logger:
             try:
                 # check if multiline
                 if line_count > 1:
-                    for i in range(0, line_count):
+                    for i in range(line_count):
                         # for line in lines:
                         line = lines[i]
                         if len(line) <= 0:
@@ -343,9 +346,9 @@ class Logger:
 
                         # if last line:
                         if i == line_count - 1:
-                            line = '+ %s' % (line, )
+                            line = f'+ {line}'
                         elif i > 0:
-                            line = '| %s' % (line,)
+                            line = f'| {line}'
 
                         formatted_message = self.logFormat % (
                             timestamp,

@@ -62,12 +62,12 @@ class Channel(chn_class.Channel):
         url = result_set["trailers"][0]["url"]
         thumb_url = result_set["poster"]
         if "http:" not in thumb_url:
-            thumb_url = "%s%s" % (self.baseUrl, thumb_url)
+            thumb_url = f"{self.baseUrl}{thumb_url}"
         fanart = thumb_url.replace("poster.jpg", "background.jpg")
 
         # get the url that shows all trailers/clips. Because the json
         # only shows the most recent one.
-        url = "%s%s" % (self.baseUrl, url)
+        url = f"{self.baseUrl}{url}"
 
         # Logger.Trace(date)
         dates = date.split(" ")
@@ -120,7 +120,7 @@ class Channel(chn_class.Channel):
 
         movie_id = Regexer.do_regex(r"movietrailers://movie/detail/(\d+)", data)[-1]
         Logger.debug("Found Movie ID: %s", movie_id)
-        url = "%s/trailers/feeds/data/%s.json" % (self.baseUrl, movie_id)
+        url = f"{self.baseUrl}/trailers/feeds/data/{movie_id}.json"
         data = UriHandler.open(url)
 
         # set it for logging purposes
@@ -151,7 +151,7 @@ class Channel(chn_class.Channel):
         Logger.trace(result_set)
 
         title = result_set["title"]
-        title = "%s - %s" % (self.parentItem.name, title)
+        title = f"{self.parentItem.name} - {title}"
 
         thumb = result_set["thumb"]
         year, month, day = result_set["posted"].split("-")
@@ -160,17 +160,16 @@ class Channel(chn_class.Channel):
         item.thumb = thumb
         item.set_date(year, month, day)
 
-        runtime = result_set.get("runtime").split(":")
-        if runtime:
+        if runtime := result_set.get("runtime").split(":"):
             duration = (int(runtime[0]) * 60) + int(runtime[1])
             item.set_info_label("duration", duration)
-
-        stream_headers = {"User-Agent": "QuickTime/7.6 (qtver=7.6;os=Windows NT 6.0Service Pack 2)"}
 
         if "versions" in result_set and "enus" in result_set["versions"] and "sizes" in result_set["versions"]["enus"]:
             streams = result_set["versions"]["enus"]["sizes"]
             stream_types = ("src", "srcAlt")
             bitrates = {"hd1080": 8300, "hd720": 5300, "sd": 1200}
+            stream_headers = {"User-Agent": "QuickTime/7.6 (qtver=7.6;os=Windows NT 6.0Service Pack 2)"}
+
             for s in streams:
                 bitrate = bitrates.get(s, 0)
                 stream_data = streams[s]
@@ -184,10 +183,8 @@ class Channel(chn_class.Channel):
                             parts = stream_url.rsplit("_", 1)
                             if len(parts) == 2:
                                 Logger.trace(parts)
-                                stream_url = "%s_h%s" % (parts[0], parts[1])
-                            stream = item.add_stream(stream_url, bitrate)
-                        else:
-                            stream = item.add_stream(stream_url, bitrate)
+                                stream_url = f"{parts[0]}_h{parts[1]}"
+                        stream = item.add_stream(stream_url, bitrate)
                         stream.HttpHeaders.update(stream_headers)
                         item.complete = True
 

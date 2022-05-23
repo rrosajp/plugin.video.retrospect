@@ -48,9 +48,9 @@ class Mms(object):
         urls = Regexer.do_regex(r"[Rr]ef\d=http://([^\r\n]+)", data)
 
         if len(urls) > index:
-            return "mms://%s" % (urls[index],)
+            return f"mms://{urls[index]}"
         elif len(urls) > 0:
-            return "mms://%s" % (urls[0],)
+            return f"mms://{urls[0]}"
         else:
             return url
 
@@ -97,7 +97,4 @@ class Mms(object):
         data = UriHandler.open(url)
         urls = Regexer.do_regex(r'[Rr]ef href\W*=\W*"mms://([^"]+)"', data)
 
-        if len(urls) > 0:
-            return "mms://%s" % (urls[0],)
-        else:
-            return url
+        return f"mms://{urls[0]}" if len(urls) > 0 else url

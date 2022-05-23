@@ -154,7 +154,7 @@ class Plugin(ActionParser):
                 from resources.lib.actions.videoaction import VideoAction
                 addon_action = VideoAction(self, channel_object)
 
-            elif not self.params[keyword.ACTION] == "":
+            elif self.params[keyword.ACTION] != "":
                 from resources.lib.actions.contextaction import ContextMenuAction
                 addon_action = ContextMenuAction(
                     self, channel_object, self.params[keyword.ACTION])

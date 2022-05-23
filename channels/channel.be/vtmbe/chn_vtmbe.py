@@ -120,7 +120,7 @@ class Channel(chn_class.Channel):
             self.__sso = "stievie-sso"
             self.__apiKey = "stievie-web-2.8-yz4DSTPshescHUytkWwU9jDxQ28PKTGn"
             self.noImage = "stievieimage.jpg"
-            self.httpHeaders["Authorization"] = "apikey=%s" % (self.__apiKey, )
+            self.httpHeaders["Authorization"] = f"apikey={self.__apiKey}"
 
             self.mainListUri = "https://channels.medialaan.io/channels/v1/channels?preview=false"
             self._add_data_parser(self.mainListUri,
@@ -157,7 +157,7 @@ class Channel(chn_class.Channel):
                                   parser=["response", "videos"])
 
         else:
-            raise NotImplementedError("%s not supported yet" % (self.channelCode, ))
+            raise NotImplementedError(f"{self.channelCode} not supported yet")
 
         self._add_data_parser(
             r"https://(?:vtm.be|www.q2.be)/video/?.+=sm_field_video_origin_cms_longform%3AVolledige%20afleveringen&.+id=\d+",
@@ -270,8 +270,8 @@ class Channel(chn_class.Channel):
 
         if login_token and "|" not in login_token and login_cookie is not None:
             # only retrieve the account information using the cookie and the token
-            account_info_url = "https://accounts.eu1.gigya.com/accounts.getAccountInfo?{}" \
-                               "&login_token={}".format(common_data, login_token)
+            account_info_url = f"https://accounts.eu1.gigya.com/accounts.getAccountInfo?{common_data}&login_token={login_token}"
+
             account_info = UriHandler.open(account_info_url, no_cache=True)
 
             # See if it was successfull
@@ -299,9 +299,8 @@ class Channel(chn_class.Channel):
         context_id = int(random.random() * 8999999999) + 1000000000
 
         # then we do an initial bootstrap call, which retrieves the `gmid` and `ucid` cookies
-        url = "https://accounts.eu1.gigya.com/accounts.webSdkBootstrap?apiKey={}" \
-              "&pageURL=https%3A%2F%2Fwatch.stievie.be%2F&format=jsonp" \
-              "&callback=gigya.callback&context=R{}".format(api_key, context_id)
+        url = f"https://accounts.eu1.gigya.com/accounts.webSdkBootstrap?apiKey={api_key}&pageURL=https%3A%2F%2Fwatch.stievie.be%2F&format=jsonp&callback=gigya.callback&context=R{context_id}"
+
         init_login = UriHandler.open(url, no_cache=True)
         init_data = JsonHelper(init_login)
         if init_data.get_value("statusCode") != 200:
@@ -382,14 +381,12 @@ class Channel(chn_class.Channel):
 
         """
 
-        items = []
-        live = MediaItem("Live %s" % (self.parentItem.name, ), "#livestream")
+        live = MediaItem(f"Live {self.parentItem.name}", "#livestream")
         live.isLive = True
         live.media_type = mediatype.EPISODE
         live.description = self.parentItem.description
         live.metaData = self.parentItem.metaData
-        items.append(live)
-
+        items = [live]
         if not self.__adaptiveStreamingAvailable:
             # Only list the channel content if DASH is supported
             return data, items
@@ -469,11 +466,7 @@ class Channel(chn_class.Channel):
         item.isGeoLocked = True
 
         if "icons" in result_set:
-            # noinspection PyTypeChecker
-            item.thumb = result_set["icons"]["default"]
-            if not item.thumb:
-                # noinspection PyTypeChecker
-                item.thumb = result_set["icons"]["white"]
+            item.thumb = result_set["icons"]["default"] or result_set["icons"]["white"]
         return item
 
     def stievie_create_epg_items_v3(self, result_set):
@@ -502,7 +495,7 @@ class Channel(chn_class.Channel):
         if video_id is None:
             return None
 
-        url = "https://vod.medialaan.io/vod/v2/videos/{}".format(video_id)
+        url = f"https://vod.medialaan.io/vod/v2/videos/{video_id}"
 
         summer_time = time.localtime().tm_isdst
         now = datetime.datetime.now()
@@ -512,7 +505,7 @@ class Channel(chn_class.Channel):
             title = "%s - s%02de%02d" % (title, result_set["season"]["number"], episode_info["number"])
 
         if "subtitle" in episode_info and episode_info["subtitle"]:
-            title = "{} - {}".format(title, episode_info["subtitle"])
+            title = f'{title} - {episode_info["subtitle"]}'
 
         start_time = result_set["start"]["display"].split(".")[0]
         start_time_tuple = DateHelper.get_date_from_string(start_time, date_format="%Y-%m-%dT%H:%M:%S")
@@ -695,12 +688,11 @@ class Channel(chn_class.Channel):
         json_items = json.get_value("response", "items")
         count = json.get_value("response", "total")
         for i in range(100, count, 100):
-            url = "%s&from=%s" % (self.mainListUri, i)
+            url = f"{self.mainListUri}&from={i}"
             Logger.debug("Retrieving more items from: %s", url)
             more_data = UriHandler.open(url)
             more_json = JsonHelper(more_data)
-            more_items = more_json.get_value("response", "items")
-            if more_items:
+            if more_items := more_json.get_value("response", "items"):
                 json_items += more_items
 
         Logger.debug("Added: %s extra items", len(json_items))
@@ -855,7 +847,7 @@ class Channel(chn_class.Channel):
             return item
 
         created = DateHelper.get_date_from_string(date.split(".")[0], "%Y-%m-%dT%H:%M:%S")
-        item.set_date(*created[0:6])
+        item.set_date(*created[:6])
 
         return item
 
@@ -934,8 +926,6 @@ class Channel(chn_class.Channel):
         if not username:
             return data, []
 
-        items = []
-
         if self.channelCode == "vtm":
             item = MediaItem("Live VTM", "#livestream")
         else:
@@ -944,8 +934,7 @@ class Channel(chn_class.Channel):
         item.isLive = True
         now = datetime.datetime.now()
         item.set_date(now.year, now.month, now.day, now.hour, now.minute, now.second)
-        items.append(item)
-
+        items = [item]
         # No more recent items
         # if self.channelCode == "vtm":
         #     recent = MediaItem("\a.: Recent :.", "https://vtm.be/video/volledige-afleveringen/id")
@@ -978,7 +967,7 @@ class Channel(chn_class.Channel):
             return None
 
         if not url.startswith("http"):
-            url = "%s%s" % (self.baseUrl, url)
+            url = f"{self.baseUrl}{url}"
         # Try to mix the Medialaan API with HTML is not working
         # programId = result_set['url'].split('%3A')[-1]
         program_id = title.rstrip()
@@ -991,12 +980,7 @@ class Channel(chn_class.Channel):
                   "&programIds=%s" % (self.__apiKey, series_id, )
         else:
             url = HtmlEntityHelper.strip_amp(url)
-        # We need to convert the URL
-        # http://vtm.be/video/?f[0]=sm_field_video_origin_cms_longform%3AVolledige%20afleveringen&amp;f[1]=sm_field_program_active%3AAlloo%20bij%20de%20Wegpolitie
-        # http://vtm.be/video/?amp%3Bf[1]=sm_field_program_active%3AAlloo%20bij%20de%20Wegpolitie&f[0]=sm_field_video_origin_cms_longform%3AVolledige%20afleveringen&f[1]=sm_field_program_active%3AAlloo%20bij%20de%20Wegpolitie
-
-        item = MediaItem(title, url)
-        return item
+        return MediaItem(title, url)
 
     def add_more_recent_videos(self, data):
         """ Preprocesses the data and adds more recent videos.
@@ -1018,7 +1002,8 @@ class Channel(chn_class.Channel):
         items = []
 
         video_id = self.parentItem.url.rsplit("%3A", 1)[-1]
-        recent_url = "https://vtm.be/block/responsive/medialaan_vod/program?offset=0&limit=10&program=%s" % (video_id, )
+        recent_url = f"https://vtm.be/block/responsive/medialaan_vod/program?offset=0&limit=10&program={video_id}"
+
         recent_data = UriHandler.open(recent_url)
 
         # https://vtm.be/video/volledige-afleveringen/id/257124125192000
@@ -1059,10 +1044,11 @@ class Channel(chn_class.Channel):
         if title:
             title = title.strip()
 
-        if 'subtitle' in result_set and title:
-            title = "%s - %s" % (title, result_set['subtitle'].strip())
-        elif 'subtitle' in result_set:
-            title = result_set['subtitle'].strip()
+        if 'subtitle' in result_set:
+            if title:
+                title = f"{title} - {result_set['subtitle'].strip()}"
+            else:
+                title = result_set['subtitle'].strip()
 
         if not title:
             Logger.warning("Item without title found: %s", result_set)
@@ -1070,7 +1056,7 @@ class Channel(chn_class.Channel):
 
         url = result_set["url"].replace('  ', ' ')
         if not result_set["url"].startswith("http"):
-            url = "%s/%s" % (self.baseUrl, result_set["url"])
+            url = f'{self.baseUrl}/{result_set["url"]}'
         item = MediaItem(title, url, media_type=mediatype.EPISODE)
         item.thumb = result_set['thumburl']
         item.complete = False
@@ -1147,12 +1133,10 @@ class Channel(chn_class.Channel):
         elif self.channelCode == "stievie":
             channel = item.metaData["channelId"]
 
-        url = "https://stream-live.medialaan.io/stream-live/v1/channels/%s/broadcasts/current/video/?deviceId=%s" % (
-            channel,
-            AddonSettings.get_client_id().replace("-", "")  # Could be a random int
-        )
+        url = f'https://stream-live.medialaan.io/stream-live/v1/channels/{channel}/broadcasts/current/video/?deviceId={AddonSettings.get_client_id().replace("-", "")}'
 
-        auth = {"Authorization": "apikey=%s&access_token=%s" % (self.__apiKey, token)}
+
+        auth = {"Authorization": f"apikey={self.__apiKey}&access_token={token}"}
         data = UriHandler.open(url, no_cache=True, additional_headers=auth)
         json_data = JsonHelper(data)
         hls = json_data.get_value("response", "url", "hls-aes-linear")
@@ -1270,7 +1254,7 @@ class Channel(chn_class.Channel):
                         AddonSettings.get_client_id().replace("-", "")
                     )
 
-        auth = "apikey=%s&access_token=%s" % (self.__apiKey, token)
+        auth = f"apikey={self.__apiKey}&access_token={token}"
         headers = {"Authorization": auth}
         data = UriHandler.open(media_url, additional_headers=headers)
 
@@ -1340,12 +1324,8 @@ class Channel(chn_class.Channel):
         # Q2:  https://user.medialaan.io/user/v1/gigya/request_token?uid=897b786c46e3462eac81549453680c0d&signature=SM7b5ciP09Z0gbcaCoZ%2B7r4b3uk%3D&timestamp=1484691251&apikey=q2-html5-NNSMRSQSwGMDAjWKexV4e5Vm6eSPtupk&database=q2-sso&_=1484691247493
         # VTM: https://user.medialaan.io/user/v1/gigya/request_token?uid=897b786c46e3462eac81549453680c0d&signature=Ak10FWFpuF2cSXfmGnNIBsJV4ss%3D&timestamp=1481233821&apikey=vtm-b7sJGrKwMJj0VhdZvqLDFvgkJF5NLjNY&database=vtm-sso
 
-        url = "https://user.medialaan.io/user/v1/gigya/request_token?uid=%s&signature=%s&timestamp=%s&apikey=%s&database=%s" % (
-            self.__userId,
-            HtmlEntityHelper.url_encode(self.__signature),
-            self.__signatureTimeStamp,
-            HtmlEntityHelper.url_encode(self.__apiKey),
-            self.__sso)
+        url = f"https://user.medialaan.io/user/v1/gigya/request_token?uid={self.__userId}&signature={HtmlEntityHelper.url_encode(self.__signature)}&timestamp={self.__signatureTimeStamp}&apikey={HtmlEntityHelper.url_encode(self.__apiKey)}&database={self.__sso}"
+
         data = UriHandler.open(url, no_cache=True)
         json_data = JsonHelper(data)
         return json_data.get_value("response")
@@ -1365,8 +1345,7 @@ class Channel(chn_class.Channel):
             Logger.warning("Username for Medialaan changed.")
             return False
 
-        signature_setting = logon_json.get_value("sessionInfo", "login_token")
-        if signature_setting:
+        if signature_setting := logon_json.get_value("sessionInfo", "login_token"):
             Logger.info("Found 'login_token'. Saving it.")
             AddonSettings.set_setting(signature_settings, signature_setting.split("|")[0], store=LOCAL)
 

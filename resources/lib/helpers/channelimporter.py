@@ -84,8 +84,7 @@ class ChannelIndex(object):
             ("channel.mtv.mtvnl", "mtvnl"): ("channel.nick.nickelodeon", "mtvnl")
         }
 
-        moved = moved_channels.get((channel_id, channel_code))
-        if moved:
+        if moved := moved_channels.get((channel_id, channel_code)):
             channel_id = moved[0]
             channel_code = moved[1]
             Logger.info("Channel was moved to %s-%s", channel_id, channel_code)
@@ -127,7 +126,7 @@ class ChannelIndex(object):
         return channel_info.get_channel()
 
     # noinspection PyUnusedLocal
-    def get_channels(self, include_disabled=False, **kwargs):  # NOSONAR
+    def get_channels(self, include_disabled=False, **kwargs):    # NOSONAR
         """ Retrieves all enabled channels within Retrospect.
 
         If updated channels are found, the those channels are indexed and the
@@ -161,7 +160,10 @@ class ChannelIndex(object):
                 if not os.path.isdir(channel_set_path):
                     continue
 
-                channel_set_info_path = os.path.join(channel_set_path, "chn_{}.json".format(channel_set))
+                channel_set_info_path = os.path.join(
+                    channel_set_path, f"chn_{channel_set}.json"
+                )
+
                 channel_infos = ChannelInfo.from_json(channel_set_info_path)
 
                 # Check if the channel was updated
@@ -235,7 +237,7 @@ class ChannelIndex(object):
 
         categories = set()
         channels = self.get_channels()
-        list([categories.add(c.category) for c in channels])
+        [categories.add(c.category) for c in channels]
         Logger.debug("Found these categories: %s", ", ".join(categories))
         return categories
 
@@ -249,8 +251,8 @@ class ChannelIndex(object):
 
         """
 
-        compiled_name = "%s.pyc" % (channel_info.moduleName,)
-        optimized_name = "%s.pyo" % (channel_info.moduleName,)
+        compiled_name = f"{channel_info.moduleName}.pyc"
+        optimized_name = f"{channel_info.moduleName}.pyo"
 
         # A channel set is updated if no Optimized (.pyo) and no Compiled (.pyc) files are
         # there.
@@ -312,7 +314,10 @@ class ChannelIndex(object):
         # __import__(channelInfo.moduleName)
         # The debugger won't compile if __import__ is used. So let's use this one.
         import py_compile
-        py_compile.compile(os.path.join(channel_info.path, "%s.py" % (channel_info.moduleName,)))
+        py_compile.compile(
+            os.path.join(channel_info.path, f"{channel_info.moduleName}.py")
+        )
+
 
         # purge the texture cache.
         if TextureHandler.instance():
@@ -366,4 +371,4 @@ class ChannelIndex(object):
 
         """
 
-        return "ChannelIndex for {} (id={})".format(Config.profileDir, self.id)
+        return f"ChannelIndex for {Config.profileDir} (id={self.id})"

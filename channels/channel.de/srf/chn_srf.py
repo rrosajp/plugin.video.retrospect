@@ -71,8 +71,6 @@ class Channel(chn_class.Channel):
         """
 
         Logger.info("Fetching episode items")
-        items = []
-
         live = LanguageHelper.get_localized_string(LanguageHelper.LiveTv)
         live_items = MediaItem(
             "\a.: {} :.".format(live),
@@ -80,7 +78,7 @@ class Channel(chn_class.Channel):
         )
         live_items.isLive = True
         live_items.dontGroup = True
-        items.append(live_items)
+        items = [live_items]
         return data, items
 
     def create_episode_item(self, result_set):
@@ -99,7 +97,8 @@ class Channel(chn_class.Channel):
 
         Logger.trace(result_set)
 
-        url = "https://www.srf.ch/play/v3/api/srf/production/videos-by-show-id?showId={}".format(result_set["id"])
+        url = f'https://www.srf.ch/play/v3/api/srf/production/videos-by-show-id?showId={result_set["id"]}'
+
         item = FolderItem(result_set["title"], url, content_type=contenttype.EPISODES)
         item.description = result_set.get("description", "")
         item.httpHeaders = self.httpHeaders
@@ -131,7 +130,8 @@ class Channel(chn_class.Channel):
 
         Logger.trace(result_set)
         video_urn = result_set["urn"]
-        url = "https://il.srgssr.ch/integrationlayer/2.0/mediaComposition/byUrn/{}.json?onlyChapters=false&vector=portalplay".format(video_urn)
+        url = f"https://il.srgssr.ch/integrationlayer/2.0/mediaComposition/byUrn/{video_urn}.json?onlyChapters=false&vector=portalplay"
+
         item = MediaItem(result_set["title"], url)
 
         item.media_type = mediatype.EPISODE
@@ -139,15 +139,14 @@ class Channel(chn_class.Channel):
         item.description = result_set.get("description")
         item.isGeoLocked = not result_set.get("playableAbroad", True)
 
-        duration = result_set.get("duration")
-        if duration:
+        if duration := result_set.get("duration"):
             item.set_info_label("duration", int(duration)/1000)
 
         date_value = str(result_set["date"])
         date_value = date_value.split("+", 1)[0]
         # date=2021-07-01T12:34:50+02:00
         date_time = DateHelper.get_date_from_string(date_value, "%Y-%m-%dT%H:%M:%S")
-        item.set_date(*date_time[0:6])
+        item.set_date(*date_time[:6])
         item.httpHeaders = self.httpHeaders
         item.complete = False
         return item
@@ -174,20 +173,19 @@ class Channel(chn_class.Channel):
 
         Logger.trace(result_set)
         video_urn = result_set["livestreamUrn"]
-        url = "https://il.srgssr.ch/integrationlayer/2.0/mediaComposition/byUrn/{}.json?onlyChapters=false&vector=portalplay".format(video_urn)
+        url = f"https://il.srgssr.ch/integrationlayer/2.0/mediaComposition/byUrn/{video_urn}.json?onlyChapters=false&vector=portalplay"
+
         station = result_set["title"]
         description = []
 
-        next_item = result_set["next"]
-        if next_item:
+        if next_item := result_set["next"]:
             next_title = LanguageHelper.get_localized_string(LanguageHelper.Next)
-            description.append("[B]{}[/B]: {}".format(next_title, next_item["title"]))
+            description.append(f'[B]{next_title}[/B]: {next_item["title"]}')
 
-        now_item = result_set.get("now")
-        if now_item:
+        if now_item := result_set.get("now"):
             now_title = LanguageHelper.get_localized_string(LanguageHelper.NowPlaying)
-            title = "[COLOR gold]{}[/COLOR]: {}".format(station, now_item["title"])
-            description.insert(0, "[B]{}[/B]: {}".format(now_title, now_item["title"]))
+            title = f'[COLOR gold]{station}[/COLOR]: {now_item["title"]}'
+            description.insert(0, f'[B]{now_title}[/B]: {now_item["title"]}')
             description.append("\n{}".format(now_item["description"]))
         else:
             title = station
@@ -231,15 +229,11 @@ class Channel(chn_class.Channel):
             url = video_info["url"]
             video_type = video_info["protocol"].lower()
             quality = video_info["quality"].lower()
-            if quality == "sd":
-                bitrate = 1000
-            else:
-                bitrate = 2500
-
+            bitrate = 1000 if quality == "sd" else 2500
             if video_type == "hls":
                 item.complete = M3u8.update_part_with_m3u8_streams(item, url, bitrate=bitrate, encrypted=False)
 
-            elif video_type == "mpd" or video_type == "dash":
+            elif video_type in ["mpd", "dash"]:
                 license_url = [d["licenseUrl"] for d in video_info["drmList"] if d["type"].lower() == "widevine"][0]
                 license_key = Mpd.get_license_key(license_url, key_type="R")
                 stream = item.add_stream(url, bitrate=bitrate + 1)

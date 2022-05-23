@@ -23,7 +23,7 @@ class LogSender(object):
 
         self.__apiKey = api_key
         self.__logger = logger
-        
+
         self.__mode = mode
         self.__maxCharCount = None
         self.__maxSize = None
@@ -35,7 +35,7 @@ class LogSender(object):
         elif mode == 'gist':
             self.__maxSize = 25 * 1024 * 1024  # max is 1000 kB for displaying, none for raw
         else:
-            raise ValueError("Invalid mode: %s" % (mode, ))
+            raise ValueError(f"Invalid mode: {mode}")
         return
 
     def send_file(self, name, file_path, expire='1M', paste_format=None, user_key=None):
@@ -121,7 +121,7 @@ class LogSender(object):
             params['api_user_key'] = user_key
 
         post_params = ""
-        for k in params.keys():
+        for k in params:
             post_params = "{0}&{1}={2}".format(post_params, k,
                                                HtmlEntityHelper.url_encode(str(params[k])))
         post_params = post_params.lstrip("&")
@@ -151,7 +151,7 @@ class LogSender(object):
         if not key:
             raise IOError(json.get_value("message"))
 
-        url = "https://paste.kodi.tv/{}".format(key)
+        url = f"https://paste.kodi.tv/{key}"
 
         if self.__logger:
             self.__logger.info("HasteBin Url: %s", url)
@@ -191,8 +191,7 @@ class LogSender(object):
                 code = fp.read()
                 if len(code) > self.__maxCharCount:
                     lines = code.splitlines()
-                    result = "\n".join(lines[:100])
-                    result += "\n{}\n".format("*" * 100)
+                    result = "\n".join(lines[:100]) + "\n{}\n".format("*" * 100)
                     result += code[-(self.__maxCharCount - len(result)) + 1:]
                     return result
                 return code

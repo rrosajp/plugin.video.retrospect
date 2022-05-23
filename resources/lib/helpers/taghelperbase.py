@@ -44,18 +44,18 @@ class TagHelperBase(object):
         if list(kwargs.keys()).count("firstOnly") > 0:
             first_only = kwargs["firstOnly"]
             Logger.trace("Setting 'firstOnly' to '%s'", first_only)
-            
+
         html_regex = '<%s' % (tag,)
-        
+
         for arg in args:
             name = list(arg.keys())[0]
             value = arg[list(arg.keys())[0]]
             Logger.trace("Name: %s, Value: %s", name, value)
-            
+
             # to keep working with older versions where class could not be passed
             if name == "cls":
                 name = "class"
-            
+
             if value is None:
                 html_regex += r'[^>]*%s\W*=\W*["\']([^"\']+)["\']' % (name,)
             else:
@@ -63,14 +63,11 @@ class TagHelperBase(object):
 
         html_regex += "[^>]*>"
         Logger.trace("HtmlRegex = %s", html_regex)
-        
+
         result = Regexer.do_regex(html_regex, self.data)
         Logger.trace(result)
-        
+
         if len(result) > 0:
-            if first_only:
-                return result[0].strip()
-            else:
-                return result
+            return result[0].strip() if first_only else result
         else:
             return ""

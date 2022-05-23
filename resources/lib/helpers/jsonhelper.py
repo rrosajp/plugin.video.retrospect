@@ -22,11 +22,11 @@ class JsonHelper(object):
 
         self.logger = logger
         self.data = data.strip()
-        self.json = dict()
+        self.json = {}
 
         if len(self.data) == 0:
             # no data in, no data out
-            self.json = dict()
+            self.json = {}
             return
 
         if self.data[0] not in "[{":
@@ -103,7 +103,7 @@ class JsonHelper(object):
 
         """
 
-        hex_string = "0x%s" % (match.group(2))
+        hex_string = f"0x{match.group(2)}"
         hex_value = int(hex_string, 16)
         return unichr(hex_value)
 

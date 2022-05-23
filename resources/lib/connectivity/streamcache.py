@@ -45,8 +45,7 @@ class StreamCache(object):
     @locked_read_write
     def set(self, key):
         file_name = os.path.join(self.cachePath, key)
-        fp = io.open(file_name, mode="w+b")
-        return fp
+        return io.open(file_name, mode="w+b")
 
     @locked_read_write
     def get(self, key):

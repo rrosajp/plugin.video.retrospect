@@ -65,10 +65,10 @@ class Channel(chn_class.Channel):
 
         #===============================================================================================================
         # non standard items
-        self.largeIconSet = dict()
+        self.largeIconSet = {}
 
         for channel in ["rtl4", "rtl5", "rtl7", "rtl8"]:
-            self.largeIconSet[channel] = self.get_image_location("%slarge.png" % (channel,))
+            self.largeIconSet[channel] = self.get_image_location(f"{channel}large.png")
 
         self.__ignore_cookie_law()
 
@@ -138,8 +138,6 @@ class Channel(chn_class.Channel):
 
         """
 
-        items = []
-
         # let's add the RTL-Z live stream
         rtlz_live = FolderItem("RTL Z Live Stream", "", content_type=contenttype.VIDEOS)
         rtlz_live.complete = True
@@ -160,8 +158,7 @@ class Channel(chn_class.Channel):
         stream_item.add_stream("http://mss3.rtl7.nl/rtlzbroad", 1200)
 
         rtlz_live.items.append(stream_item)
-        items.append(rtlz_live)
-
+        items = [rtlz_live]
         # Add recent items
         data, recent_items = self.add_recent_items(data)
         return data, recent_items + items
@@ -176,16 +173,13 @@ class Channel(chn_class.Channel):
 
         """
 
-        items = []
-
         recent = FolderItem("\a .: Recent :.", "", content_type=contenttype.VIDEOS)
         recent.complete = True
         recent.dontGroup = True
-        items.append(recent)
-
+        items = [recent]
         today = datetime.datetime.now()
         days = ["Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag", "Zondag"]
-        for i in range(0, 7, 1):
+        for i in range(7):
             air_date = today - datetime.timedelta(i)
             Logger.trace("Adding item for: %s", air_date)
 
@@ -232,7 +226,8 @@ class Channel(chn_class.Channel):
 
         title = result_set["name"]
         key = result_set.get("key", result_set["abstract_key"])
-        url = "http://www.rtl.nl/system/s4m/vfd/version=1/d=pc/output=json/fun=getseasons/ak=%s" % (key,)
+        url = f"http://www.rtl.nl/system/s4m/vfd/version=1/d=pc/output=json/fun=getseasons/ak={key}"
+
         item = FolderItem(title, url, content_type=contenttype.EPISODES)
         item.complete = True
 
@@ -245,11 +240,10 @@ class Channel(chn_class.Channel):
         #     item.icon = self.largeIconSet[channel]
         #     item.thumb = self.largeIconSet[channel]
 
-        item.thumb = "https://covers.rtl.nl/cover/l/pc/{}".format(key)
-        item.poster = "https://covers.rtl.nl/cover/p/pc/{}".format(key)
-        prog_logo = result_set.get("proglogo", None)
-        if prog_logo:
-            item.thumb = "http://data.rtl.nl/service/programma_logos/%s" % (prog_logo,)
+        item.thumb = f"https://covers.rtl.nl/cover/l/pc/{key}"
+        item.poster = f"https://covers.rtl.nl/cover/p/pc/{key}"
+        if prog_logo := result_set.get("proglogo", None):
+            item.thumb = f"http://data.rtl.nl/service/programma_logos/{prog_logo}"
 
         return item
 
@@ -276,13 +270,13 @@ class Channel(chn_class.Channel):
         self.currentJson = JsonHelper(data, Logger.instance())
 
         # Extract season (called abstracts) information
-        self.abstracts = dict()  # : the season
+        self.abstracts = {}
         Logger.debug("Storing abstract information")
         for abstract in self.currentJson.get_value("abstracts"):
             self.abstracts[abstract["key"]] = abstract
 
         # If we have episodes available, list them
-        self.episodes = dict()
+        self.episodes = {}
         if "episodes" in self.currentJson.get_value():
             Logger.debug("Storing episode information")
             for episode in self.currentJson.get_value("episodes"):
@@ -296,20 +290,16 @@ class Channel(chn_class.Channel):
         items_on_page = int(self.currentJson.get_value("meta", "nr_of_videos_onpage"))
         total_items = int(self.currentJson.get_value("meta", "nr_of_videos_total"))
         current_page = self.currentJson.get_value("meta", "pg")
-        if current_page == "all":
-            current_page = 1
-        else:
-            current_page = int(current_page)
+        current_page = 1 if current_page == "all" else int(current_page)
         Logger.debug("Found a total of %s items (%s items per page), we are on page %s", total_items, items_on_page, current_page)
 
-        # But don't show them if not episodes were found
         if self.episodes:
             if items_on_page < 50:
                 Logger.debug("No more pages to show.")
             else:
                 next_page = current_page + 1
                 url = self.parentItem.url[:self.parentItem.url.rindex("=")]
-                url = "%s=%s" % (url, next_page)
+                url = f"{url}={next_page}"
                 Logger.trace(url)
                 page_item = FolderItem(
                     str(next_page), url,
@@ -350,15 +340,16 @@ class Channel(chn_class.Channel):
         abstract_name = abstract_data.get("name", "")
         title = result_set["name"]
         if abstract_name:
-            title = "%s - %s" % (abstract_name, title)
+            title = f"{abstract_name} - {title}"
 
         description = result_set.get("synopsis", None)
         key_value = result_set["key"]
-        url = "http://www.rtl.nl/system/s4m/vfd/version=1/d=pc/output=json/ak=%s/sk=%s/pg=1" % (abstract_key, key_value)
+        url = f"http://www.rtl.nl/system/s4m/vfd/version=1/d=pc/output=json/ak={abstract_key}/sk={key_value}/pg=1"
+
 
         item = FolderItem(title.title(), url, content_type=contenttype.EPISODES)
         item.description = description
-        item.thumb = "%s/%s.png" % (self.posterBase, key_value,)
+        item.thumb = f"{self.posterBase}/{key_value}.png"
         item.complete = True
         return item
 
@@ -383,8 +374,7 @@ class Channel(chn_class.Channel):
 
         Logger.trace(result_set)
 
-        episode_key = result_set["episode_key"]
-        if episode_key:
+        if episode_key := result_set["episode_key"]:
             episode_data = self.episodes.get(episode_key, None)
             if not episode_data:
                 Logger.warning("Could not find episodes data for key: %s", episode_key)
@@ -397,10 +387,7 @@ class Channel(chn_class.Channel):
         title = result_set["title"]
         description = None
         if episode_data:
-            if title:
-                title = "%s - %s" % (episode_data["name"], title)
-            else:
-                title = episode_data["name"]
+            title = f'{episode_data["name"]} - {title}' if title else episode_data["name"]
             description = episode_data.get("synopsis", None)
 
         # tarifs have datetimes
@@ -435,22 +422,20 @@ class Channel(chn_class.Channel):
                         break
 
         uuid = result_set["uuid"]
-        url = "https://api.rtl.nl/watch/play/api/play/xl/%s?device=web&drm=widevine&format=dash" % (uuid,)
+        url = f"https://api.rtl.nl/watch/play/api/play/xl/{uuid}?device=web&drm=widevine&format=dash"
+
 
         item = MediaItem(title.title(), url, media_type=mediatype.EPISODE)
         item.isPaid = premium_item
         item.description = description
-        item.thumb = "%s%s" % (self.posterBase, uuid,)
+        item.thumb = f"{self.posterBase}{uuid}"
 
-        station = result_set.get("station", None)
-        if station:
-            icon = self.largeIconSet.get(station.lower(), None)
-            if icon:
+        if station := result_set.get("station", None):
+            if icon := self.largeIconSet.get(station.lower(), None):
                 Logger.trace("Setting icon to: %s", icon)
                 item.icon = icon
 
-        date_time = result_set.get("display_date", None)
-        if date_time:
+        if date_time := result_set.get("display_date", None):
             date_time = DateHelper.get_date_from_posix(int(date_time))
             item.set_date(date_time.year, date_time.month, date_time.day,
                           date_time.hour, date_time.minute, date_time.second)
@@ -521,7 +506,8 @@ class Channel(chn_class.Channel):
         title = result_set["Title"]
         # Not used: uuid = result_set["Uuid"]
         abstract_key = result_set["AbstractKey"]
-        url = "http://www.rtl.nl/system/s4m/vfd/version=1/d=pc/output=json/fun=getseasons/ak={}".format(abstract_key)
+        url = f"http://www.rtl.nl/system/s4m/vfd/version=1/d=pc/output=json/fun=getseasons/ak={abstract_key}"
+
         item = FolderItem(title, url, content_type=contenttype.EPISODES)
 
         time_stamp = result_set["LastBroadcastDate"]  # =1546268400000
@@ -554,33 +540,27 @@ class Channel(chn_class.Channel):
 
         show_title = result_set["abstract_name"]
         episode_title = result_set["title"]
-        title = "{} - {}".format(show_title, episode_title)
+        title = f"{show_title} - {episode_title}"
         description = result_set.get("synopsis")
 
         uuid = result_set["uuid"]
-        url = "https://api.rtl.nl/watch/play/api/play/xl/%s?device=web&drm=widevine&format=dash" % (uuid,)
+        url = f"https://api.rtl.nl/watch/play/api/play/xl/{uuid}?device=web&drm=widevine&format=dash"
+
 
         item = MediaItem(title.title(), url, media_type=mediatype.EPISODE)
         item.description = description
-        item.thumb = "%s%s" % (self.posterBase, uuid,)
+        item.thumb = f"{self.posterBase}{uuid}"
 
         audience = result_set.get("audience")
         Logger.debug("Found audience: %s", audience)
         item.isGeoLocked = audience == "ALLEEN_NL"
-        # We can play the DRM stuff
-        # item.isDrmProtected = audience == "DRM"
-
-        station = result_set.get("station", None)
-        if station:
-            item.name = "{} ({})".format(item.name, station)
-            icon = self.largeIconSet.get(station.lower(), None)
-            if icon:
+        if station := result_set.get("station", None):
+            item.name = f"{item.name} ({station})"
+            if icon := self.largeIconSet.get(station.lower(), None):
                 Logger.trace("Setting icon to: %s", icon)
                 item.icon = icon
 
-        # 2018-12-05T19:30:00.000Z
-        date_time = result_set.get("dateTime", None)
-        if date_time:
+        if date_time := result_set.get("dateTime", None):
             date_time = DateHelper.get_date_from_string(date_time[:-5], "%Y-%m-%dT%H:%M:%S")
             # The time is in UTC, and the show as at UTC+1
             date_time = datetime.datetime(*date_time[:6]) + datetime.timedelta(hours=1)
@@ -615,9 +595,7 @@ class Channel(chn_class.Channel):
 
         # Get the authentication part right.
         token = self.__authenticator.get_authentication_token()
-        headers = {
-            "Authorization": "Bearer {}".format(token)
-        }
+        headers = {"Authorization": f"Bearer {token}"}
         video_data = UriHandler.open(item.url, additional_headers=headers)
         video_json = JsonHelper(video_data)
         license_url = video_json.get_value("licenseUrl")

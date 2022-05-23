@@ -242,14 +242,13 @@ class CacheHTTPAdapter(HTTPAdapter):
         data = {
             "body": body_key,
             "url": res.url,
-            "headers": dict(
-                (k, v) for k, v in res.headers.items()
-            ),
+            "headers": dict(res.headers.items()),
             "status": res.status_code,
             "reason": res.reason,
             "encoding": res.encoding,
-            "cache_data": cache_data
+            "cache_data": cache_data,
         }
+
         with self.cache_store.set(meta_key) as fp:
             json_str = json.dumps(data, indent=2)
             fp.write(json_str.encode())

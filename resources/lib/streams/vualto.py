@@ -23,7 +23,7 @@ class Vualto(object):
         self.client_id = client_id
         self.channel = channel
 
-    def get_stream_info(self, item, mzid, identity_token, live=False, hls_over_dash=False):  # NOSONAR
+    def get_stream_info(self, item, mzid, identity_token, live=False, hls_over_dash=False):    # NOSONAR
         """ Updates an item with Vualto stream data.
 
         :param MediaItem item:      The Mediaitem to update
@@ -90,7 +90,7 @@ class Vualto(object):
                         item.complete = True
                         if a:
                             audio_part = a.rsplit("-", 1)[-1]
-                            audio_part = "-%s" % (audio_part,)
+                            audio_part = f"-{audio_part}"
                             s = s.replace(".m3u8", audio_part)
                         item.add_stream(s, b)
 

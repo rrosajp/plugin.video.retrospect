@@ -23,10 +23,7 @@ class Comparable(object):
         
         """
 
-        if other is None:
-            return False
-
-        return not self < other and not other < self
+        return False if other is None else not self < other and not other < self
 
     def __ne__(self, other):
         """ Test two objects 'for non-equality'  
@@ -52,10 +49,7 @@ class Comparable(object):
         
         """
 
-        if other is None:
-            return True
-
-        return other < self
+        return True if other is None else other < self
 
     def __ge__(self, other):
         """ Test two objects for 'greater or equal than'  
@@ -105,13 +99,20 @@ class Version(Comparable):
         if version is None and major is None and minor is None and revision is None and build is None:
             raise ValueError("Either a version string or a set of version numbers should be provided.")
 
-        if version and not (major is None and minor is None and revision is None and build is None):
+        if version and (
+            major is not None
+            or minor is not None
+            or revision is not None
+            or build is not None
+        ):
             raise ValueError("Only a complete version or a set of version numbers should be provided, not both.")
 
-        if major is None and not (minor is None and revision is None and build is None):
+        if major is None and (
+            minor is not None or revision is not None or build is not None
+        ):
             raise ValueError("A Major version must be provided if a minor, revision or build is provided.")
 
-        if minor is None and not (revision is None and build is None):
+        if minor is None and (revision is not None or build is not None):
             raise ValueError("A Minor version must be provided if a revision or build is provided.")
 
         if build is None and revision is not None:
@@ -121,11 +122,7 @@ class Version(Comparable):
         self.minor = minor
         self.build = revision
         self.revision = build
-        if build_type is not None:
-            self.buildType = build_type.lower()
-        else:
-            self.buildType = None
-
+        self.buildType = build_type.lower() if build_type is not None else None
         if version:
             self.__extract_version(version)
 
@@ -183,7 +180,7 @@ class Version(Comparable):
             version, self.buildType = version.split("~")
 
         split = str(version).split('.')
-        if len(split) > 0:
+        if split:
             self.major = int(split[0])
         if len(split) > 1:
             self.minor = int(split[1])
@@ -203,9 +200,7 @@ class Version(Comparable):
 
         """
 
-        if value is None:
-            return 0
-        return int(value)
+        return 0 if value is None else int(value)
 
     def __repr__(self):
         return self.__str__()
@@ -225,15 +220,14 @@ class Version(Comparable):
                 return "%d.%d.%d~%s" % (self.major, self.minor, self.revision, self.buildType)
             else:
                 return "%d.%d.%d.%d~%s" % (self.major, self.minor, self.revision, self.build, self.buildType)
+        elif self.minor is None:
+            return str(self.major)
+        elif self.revision is None:
+            return "%d.%d" % (self.major, self.minor)
+        elif self.build is None:
+            return "%d.%d.%d" % (self.major, self.minor, self.revision)
         else:
-            if self.minor is None:
-                return str(self.major)
-            elif self.revision is None:
-                return "%d.%d" % (self.major, self.minor)
-            elif self.build is None:
-                return "%d.%d.%d" % (self.major, self.minor, self.revision)
-            else:
-                return "%d.%d.%d.%d" % (self.major, self.minor, self.revision, self.build)
+            return "%d.%d.%d.%d" % (self.major, self.minor, self.revision, self.build)
 
     def __lt__(self, other):
         """ Tests two versions for 'Lower Then'
@@ -251,27 +245,25 @@ class Version(Comparable):
         if other is None:
             return False
 
-        if not self.__none_is_zero(self.major) == self.__none_is_zero(other.major):
+        if self.__none_is_zero(self.major) != self.__none_is_zero(other.major):
             return self.__none_is_zero(self.major) < self.__none_is_zero(other.major)
 
-        if not self.__none_is_zero(self.minor) == self.__none_is_zero(other.minor):
+        if self.__none_is_zero(self.minor) != self.__none_is_zero(other.minor):
             return self.__none_is_zero(self.minor) < self.__none_is_zero(other.minor)
 
-        if not self.__none_is_zero(self.revision) == self.__none_is_zero(other.revision):
+        if self.__none_is_zero(self.revision) != self.__none_is_zero(
+            other.revision
+        ):
             return self.__none_is_zero(self.revision) < self.__none_is_zero(other.revision)
 
-        if not self.__none_is_zero(self.build) == self.__none_is_zero(other.build):
+        if self.__none_is_zero(self.build) != self.__none_is_zero(other.build):
             return self.__none_is_zero(self.build) < self.__none_is_zero(other.build)
 
-        if self.buildType is None and other.buildType is None:
+        if self.buildType is None:
             # they are the same
             return False
 
-        if self.buildType is None and other.buildType is not None:
-            # one has beta/alpha, the other None, so the other is larger
-            return False
-
-        if self.buildType is not None and other.buildType is None:
+        if other.buildType is None:
             return True
 
         # we have 2 build types

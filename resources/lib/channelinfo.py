@@ -45,8 +45,11 @@ class ChannelInfo(object):
         path_parts = path.split(os.sep)
         self.moduleName = os.path.splitext(path_parts[-1])[0]
 
-        self.id = ("%s.%s.%s" % (path_parts[-3], path_parts[-2], channel_code or "")).rstrip(".")
-        self.url_id = ("%s.%s-%s" % (path_parts[-3], path_parts[-2], channel_code or "")).rstrip("-")
+        self.id = f'{path_parts[-3]}.{path_parts[-2]}.{channel_code or ""}'.rstrip(".")
+        self.url_id = (
+            f'{path_parts[-3]}.{path_parts[-2]}-{channel_code or ""}'.rstrip("-")
+        )
+
 
         # TODO: the GUID could be replaced by the self.id in the future.
         self.guid = guid
@@ -89,9 +92,9 @@ class ChannelInfo(object):
         Logger.trace("Importing module %s from path %s", self.moduleName, self.path)
 
         sys.path.append(self.path)
-        exec("import {}".format(self.moduleName))
+        exec(f"import {self.moduleName}")
 
-        channel_command = '%s.Channel(self)' % (self.moduleName,)
+        channel_command = f'{self.moduleName}.Channel(self)'
         try:
             Logger.trace("Running command: %s", channel_command)
             channel = eval(channel_command)
@@ -124,7 +127,7 @@ class ChannelInfo(object):
 
         if self.uses_external_addon:
             from resources.lib.xbmcwrapper import XbmcWrapper
-            name = "{} {}".format(name, XbmcWrapper.get_external_add_on_label(self.addonUrl))
+            name = f"{name} {XbmcWrapper.get_external_add_on_label(self.addonUrl)}"
 
         self.icon = self.__get_image_path(self.icon)
         item = kodifactory.list_item(name, description)
@@ -161,15 +164,10 @@ class ChannelInfo(object):
         """
 
         if self.channelCode is None:
-            return "%s [%s=%s, %s=%s, %s, %s] (Order: %s)" % (
-                self.channelName, self.id, self.enabled, self.language,
-                self.visible, self.category, self.guid, self.sortOrderPerCountry
-            )
+            return f"{self.channelName} [{self.id}={self.enabled}, {self.language}={self.visible}, {self.category}, {self.guid}] (Order: {self.sortOrderPerCountry})"
+
         else:
-            return "%s (%s) [%s=%s, %s=%s, %s, %s] (Order: %s)" % (
-                self.channelName, self.channelCode, self.id, self.enabled,
-                self.language, self.visible, self.category, self.guid, self.sortOrderPerCountry
-            )
+            return f"{self.channelName} ({self.channelCode}) [{self.id}={self.enabled}, {self.language}={self.visible}, {self.category}, {self.guid}] (Order: {self.sortOrderPerCountry})"
 
     def __repr__(self):
         """ Technical representation
@@ -195,10 +193,7 @@ class ChannelInfo(object):
 
         """
 
-        if other is None:
-            return False
-
-        return self.guid == other.guid
+        return False if other is None else self.guid == other.guid
 
     def __get_image_path(self, image):
         """ Tries to determine the path of an image
@@ -240,10 +235,7 @@ class ChannelInfo(object):
         json = JsonHelper(json_data, logger=Logger.instance())
         channels = json.get_value("channels")  # type: dict
 
-        if "settings" in json.json:
-            settings = json.get_value("settings")
-        else:
-            settings = []
+        settings = json.get_value("settings") if "settings" in json.json else []
         Logger.debug("Found %s channels and %s settings in %s", len(channels), len(settings), path)
 
         for channel in channels:

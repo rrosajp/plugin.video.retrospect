@@ -55,7 +55,7 @@ class FolderAction(AddonAction):
                 media_items = self.__channel.process_folder_list(selected_item)
                 watcher.lap("Class process_folder_list finished")
             else:
-                parent_guid = "{}.fav".format(parent_guid)
+                parent_guid = f"{parent_guid}.fav"
                 watcher = StopWatch("Plugin process_folder_list With Items", Logger.instance())
                 media_items = self.__favorites
 
@@ -163,7 +163,7 @@ class FolderAction(AddonAction):
             ok = False
         elif behaviour == "dummy" and not favs:
             # We should add a dummy items, but not for favs
-            empty_list_item = MediaItem("- %s -" % (title.strip("."), ), "", mediatype.VIDEO)
+            empty_list_item = MediaItem(f'- {title.strip(".")} -', "", mediatype.VIDEO)
             empty_list_item.dontGroup = True
             empty_list_item.complete = True
 
@@ -276,16 +276,20 @@ class FolderAction(AddonAction):
 
         # And then the specialized ones ad default sort options
         if items:
-            has_dates = any([i.has_date() for i in items])
+            has_dates = any(i.has_date() for i in items)
             if has_dates:
                 sort_methods.insert(0, xbmcplugin.SORT_METHOD_DATE)  # 3
 
-            has_tracks = any([i.has_track() for i in items])
+            has_tracks = any(i.has_track() for i in items)
             if has_tracks:
                 sort_methods.insert(0, xbmcplugin.SORT_METHOD_TRACKNUM)
 
             # Check for episodes
-            if all([i.has_info_label(MediaItem.LabelEpisode) for i in items if i.is_playable]):
+            if all(
+                i.has_info_label(MediaItem.LabelEpisode)
+                for i in items
+                if i.is_playable
+            ):
                 # All playable items have episodes, pre-sort them on that.
                 sort_methods.insert(0, xbmcplugin.SORT_METHOD_EPISODE)  # 24
 
@@ -313,7 +317,7 @@ class FolderAction(AddonAction):
         bread_crumb = None
         if selected_item is not None:
             if selected_item.tv_show_title and selected_item.tv_show_title != selected_item.name:
-                bread_crumb = "{} / {}".format(selected_item.tv_show_title, selected_item.name)
+                bread_crumb = f"{selected_item.tv_show_title} / {selected_item.name}"
             else:
                 bread_crumb = selected_item.name
         elif self.__channel is not None:
@@ -345,7 +349,7 @@ class FolderAction(AddonAction):
             content_type = contenttype.EPISODES
 
         if content_type not in contenttype.ALL:
-            raise ValueError("Invalid content type: {}".format(content_type))
+            raise ValueError(f"Invalid content type: {content_type}")
 
         Logger.debug("Setting content-type to: %s", content_type)
         if content_type is not None:

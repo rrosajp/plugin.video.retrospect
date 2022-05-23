@@ -76,16 +76,17 @@ class Channel(chn_class.Channel):
         """
 
         Logger.info("Performing Pre-Processing")
-        items = []
-
         #  Add live stream (the the actual URL, but it makes it use the standard updater).
         name = LanguageHelper.get_localized_string(LanguageHelper.LiveTv)
         item = MediaItem(
-            name, "%s/programma/live/%s" % (self.baseUrl, "LI_BVN_4589107"), media_type=mediatype.VIDEO)
+            name,
+            f"{self.baseUrl}/programma/live/LI_BVN_4589107",
+            media_type=mediatype.VIDEO,
+        )
+
         item.isLive = True
         item.metaData["pow"] = "LI_BVN_4589107"
-        items.append(item)
-
+        items = [item]
         Logger.debug("Pre-Processing finished")
         return data, items
 
@@ -95,9 +96,9 @@ class Channel(chn_class.Channel):
             return item
 
         if not item.url.endswith("/"):
-            item.url = "{}/".format(item.url)
+            item.url = f"{item.url}/"
 
-        item.thumb = "{}{}".format(self.baseUrl, result_set["thumburl"])
+        item.thumb = f'{self.baseUrl}{result_set["thumburl"]}'
         item.fanart = item.thumb.replace("600/338", "1280/720")
         return item
 
@@ -107,13 +108,13 @@ class Channel(chn_class.Channel):
             return item
 
         if not item.url.endswith("/"):
-            item.url = "{}/".format(item.url)
+            item.url = f"{item.url}/"
 
         date_value = result_set["datetime"]
         date_time = DateHelper.get_date_from_string(date_value, "%Y-%m-%d %H:%M:%S")
-        item.set_date(*date_time[0:6])
+        item.set_date(*date_time[:6])
 
-        item.thumb = "{}{}".format(self.baseUrl, result_set["thumburl"])
+        item.thumb = f'{self.baseUrl}{result_set["thumburl"]}'
         item.metaData["pow"] = result_set["pow"]
 
         return item
@@ -124,8 +125,9 @@ class Channel(chn_class.Channel):
             pow_id = item.url.rsplit("/", -1)
 
         from resources.lib.streams.npostream import NpoStream
-        error = NpoStream.add_mpd_stream_from_npo(None, pow_id, item, live=item.isLive)
-        if error:
+        if error := NpoStream.add_mpd_stream_from_npo(
+            None, pow_id, item, live=item.isLive
+        ):
             XbmcWrapper.show_dialog(LanguageHelper.ErrorId, error)
         else:
             item.complete = True

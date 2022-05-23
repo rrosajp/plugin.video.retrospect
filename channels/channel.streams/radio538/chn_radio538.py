@@ -219,10 +219,6 @@ class Channel(chn_class.Channel):
         Logger.trace("%s: %s", api_type, result_set)
 
         item = None
-        if custom_type is not None:
-            # Use the 538 custom type
-            pass
-
         if api_type == "station":
             item = self.create_api_station(result_set)
         else:
@@ -248,8 +244,6 @@ class Channel(chn_class.Channel):
 
         """
 
-        items = []
-
         slam_fm = MediaItem("Slam!", "http://22553.live.streamtheworld.com/SLAM_MP3_SC"
                                         "?ttag=PLAYER%3ANOPREROLL&tdsdk=js-2.9"
                                         "&pname=TDSdk&pversion=2.9&banners=none")
@@ -257,7 +251,7 @@ class Channel(chn_class.Channel):
         slam_fm.isLive = True
         slam_fm.add_stream(slam_fm.url)
         slam_fm.complete = True
-        items.append(slam_fm)
+        items = [slam_fm]
         return data, items
 
     def create_api_station(self, result_set):
@@ -292,15 +286,12 @@ class Channel(chn_class.Channel):
             source = stream["source"]
 
             if "video" in source:
-                item = MediaItem(
-                    "{} Video".format(title), url, media_type=mediatype.VIDEO)
+                item = MediaItem(f"{title} Video", url, media_type=mediatype.VIDEO)
                 item.isLive = True
-                items.append(item)
-
             else:
                 item = MediaItem(
                     title, url, media_type=mediatype.AUDIO)
-                items.append(item)
+            items.append(item)
 
             Logger.debug("Found stream for %s: %s (%s)", title, url, source)
 

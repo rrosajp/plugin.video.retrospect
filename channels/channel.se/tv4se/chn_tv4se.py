@@ -253,9 +253,8 @@ class Channel(chn_class.Channel):
                 '%s,' \
                 'totalHits}}' % (result_set, self.__program_fields)
         query = HtmlEntityHelper.url_encode(query)
-        url = "https://graphql.tv4play.se/graphql?query={}".format(query)
-        item = MediaItem(result_set, url)
-        return item
+        url = f"https://graphql.tv4play.se/graphql?query={query}"
+        return MediaItem(result_set, url)
 
     def create_api_typed_item(self, result_set):
         """ Creates a new MediaItem based on the __typename attribute.
@@ -317,15 +316,13 @@ class Channel(chn_class.Channel):
 
         item.thumb = result_set.get("image")
         if item.thumb is not None:
-            item.thumb = "https://imageproxy.b17g.services/?format=jpg&shape=cut" \
-                         "&quality=70&resize=520x293&source={}"\
-                .format(HtmlEntityHelper.url_encode(item.thumb))
+            item.thumb = f"https://imageproxy.b17g.services/?format=jpg&shape=cut&quality=70&resize=520x293&source={HtmlEntityHelper.url_encode(item.thumb)}"
+
 
         item.fanart = result_set.get("image")
         if item.fanart is not None:
-            item.fanart = "https://imageproxy.b17g.services/?format=jpg&shape=cut" \
-                         "&quality=70&resize=1280x720&source={}" \
-                .format(HtmlEntityHelper.url_encode(item.fanart))
+            item.fanart = f"https://imageproxy.b17g.services/?format=jpg&shape=cut&quality=70&resize=1280x720&source={HtmlEntityHelper.url_encode(item.fanart)}"
+
 
         item.isPaid = result_set.get("is_premium", False)
 
@@ -378,7 +375,12 @@ class Channel(chn_class.Channel):
         elif title.startswith("Nyheter"):
             title = LanguageHelper.get_localized_string(LanguageHelper.LatestNews)
 
-        item = FolderItem(title, "swipe://{}".format(HtmlEntityHelper.url_encode(title)), content_type=contenttype.VIDEOS)
+        item = FolderItem(
+            title,
+            f"swipe://{HtmlEntityHelper.url_encode(title)}",
+            content_type=contenttype.VIDEOS,
+        )
+
         for card in result_set["cards"]:
             child = self.create_api_typed_item(card)
             if not child:
@@ -413,13 +415,13 @@ class Channel(chn_class.Channel):
         Logger.trace('starting FormatVideoItem for %s', self.channelName)
 
         program_id = result_set["id"]
-        url = "https://playback-api.b17g.net/media/{}?service=tv4&device=browser&protocol=dash".\
-            format(program_id)
+        url = f"https://playback-api.b17g.net/media/{program_id}?service=tv4&device=browser&protocol=dash"
+
 
         name = result_set["title"]
         season = result_set.get("season", 0)
         episode = result_set.get("episode", 0)
-        is_episodic = 0 < season < 1900 and not episode == 0
+        is_episodic = 0 < season < 1900 and episode != 0
         is_live = result_set.get("live", False)
         if is_episodic and not is_live:
             episode_text = None
@@ -431,7 +433,7 @@ class Channel(chn_class.Channel):
                 episode_text = episode_text.lstrip(" -")
                 name = episode_text
             else:
-                name = "{} {}".format("Avsnitt", episode)
+                name = f"Avsnitt {episode}"
 
         item = MediaItem(name, url)
         item.description = result_set["description"]
@@ -461,9 +463,8 @@ class Channel(chn_class.Channel):
         thumb_url = result_set.get("image", result_set.get("program_image"))
         # some images need to come via a proxy:
         if thumb_url and "://img.b17g.net/" in thumb_url:
-            item.thumb = "https://imageproxy.b17g.services/?format=jpg&shape=cut" \
-                         "&quality=70&resize=520x293&source={}" \
-                .format(HtmlEntityHelper.url_encode(thumb_url))
+            item.thumb = f"https://imageproxy.b17g.services/?format=jpg&shape=cut&quality=70&resize=520x293&source={HtmlEntityHelper.url_encode(thumb_url)}"
+
         else:
             item.thumb = thumb_url
 
@@ -482,7 +483,7 @@ class Channel(chn_class.Channel):
             item.name = "{:02d}:{:02d} - {}".format(broadcast_date.hour, broadcast_date.minute, name)
             item.url = "{0}&is_live=true".format(item.url)
         if item.isDrmProtected:
-            item.url = "{}&drm=widevine&is_drm=true".format(item.url)
+            item.url = f"{item.url}&drm=widevine&is_drm=true"
 
         item.set_info_label("duration", int(result_set.get("duration", 0)))
         return item
@@ -549,8 +550,7 @@ class Channel(chn_class.Channel):
             extra_results = json_data.get_value("data", "videoPanel", "videoList", "videoAssets", fallback=[])
             Logger.debug("Adding %d extra results from next page", len(extra_results or []))
             for result in extra_results:
-                item = self.create_api_video_asset_type(result)
-                if item:
+                if item := self.create_api_video_asset_type(result):
                     items.append(item)
 
         Logger.debug("Post-Processing finished")
@@ -584,8 +584,7 @@ class Channel(chn_class.Channel):
         json_data = JsonHelper(data)
         assets = json_data.get_value("data", "videoPanel", "videoList", "videoAssets")
         for asset in assets:
-            item = self.create_api_video_asset_type(asset)
-            if item:
+            if item := self.create_api_video_asset_type(asset):
                 items.append(item)
 
         return "", items
@@ -759,7 +758,7 @@ class Channel(chn_class.Channel):
                     # remove any query parameters
                     video_part = s.rsplit("?", 1)[0]
                     video_part = video_part.rsplit("-", 1)[-1]
-                    video_part = "-%s" % (video_part,)
+                    video_part = f"-{video_part}"
                     s = a.replace(".m3u8", video_part)
                 item.add_stream(s, b)
 
@@ -799,7 +798,7 @@ class Channel(chn_class.Channel):
         item.complete = True
         return item
 
-    def __get_api_url(self, operation, hash_value, variables=None):  # NOSONAR
+    def __get_api_url(self, operation, hash_value, variables=None):    # NOSONAR
         """ Generates a GraphQL url
 
         :param str operation:   The operation to use
@@ -814,19 +813,13 @@ class Channel(chn_class.Channel):
         extensions = {"persistedQuery": {"version": 1, "sha256Hash": hash_value}}
         extensions = HtmlEntityHelper.url_encode(JsonHelper.dump(extensions, pretty_print=False))
 
-        final_vars = {"order_by": "NAME", "per_page": 1000}
-        if variables:
-            final_vars = variables
+        final_vars = variables or {"order_by": "NAME", "per_page": 1000}
         final_vars = HtmlEntityHelper.url_encode(JsonHelper.dump(final_vars, pretty_print=False))
 
-        url = "https://graphql.tv4play.se/graphql?" \
-              "operationName={}&" \
-              "variables={}&" \
-              "extensions={}".format(operation, final_vars, extensions)
-        return url
+        return f"https://graphql.tv4play.se/graphql?operationName={operation}&variables={final_vars}&extensions={extensions}"
 
     def __get_api_query(self, query):
-        return "https://graphql.tv4play.se/graphql?query={}".format(HtmlEntityHelper.url_encode(query))
+        return f"https://graphql.tv4play.se/graphql?query={HtmlEntityHelper.url_encode(query)}"
 
     def __get_api_folder_url(self, folder_id, offset=0):
         return self.__get_api_query(

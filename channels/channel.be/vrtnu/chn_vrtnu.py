@@ -381,7 +381,7 @@ class Channel(chn_class.Channel):
         title = result_set["title"]
         thumb = result_set["imageStoreUrl"]
         if thumb.startswith("//"):
-            thumb = "https:{}".format(thumb)
+            thumb = f"https:{thumb}"
 
         item = FolderItem(title, url, content_type=contenttype.EPISODES)
         item.description = title
@@ -473,12 +473,12 @@ class Channel(chn_class.Channel):
         if item is None:
             return None
 
-        item.url = "{}/".format(item.url)
+        item.url = f"{item.url}/"
         item.description = HtmlHelper.to_text(item.description)
 
         # update artswork
         if item.thumb and item.thumb.startswith("//"):
-            item.thumb = "https:%s" % (item.thumb, )
+            item.thumb = f"https:{item.thumb}"
 
         # API url's
         # item.url = "https://vrtnu-api.vrt.be/search?i=video&facets[programUrl]={}&size=300".format(
@@ -505,7 +505,7 @@ class Channel(chn_class.Channel):
         if not folder_url:
             return None
 
-        folder_url = "{}{}".format(self.baseUrl, folder_url)
+        folder_url = f"{self.baseUrl}{folder_url}"
         item = FolderItem(result_set[1], folder_url, content_type=contenttype.EPISODES)
         item.name = item.name.title()
         return item
@@ -579,7 +579,7 @@ class Channel(chn_class.Channel):
             item.set_date(result_set["year"] or DateHelper.this_year(), result_set["month"], result_set["day"])
 
         if item.thumb.startswith("//"):
-            item.thumb = "https:%s" % (item.thumb, )
+            item.thumb = f"https:{item.thumb}"
 
         self.__hasAlreadyVideoItems = True
         return item
@@ -640,7 +640,7 @@ class Channel(chn_class.Channel):
         video_id = json_info.get_value("video", "@id")
         publication_id = json_info.get_value("publication", -1, "@id")
 
-        mzid = "{}${}".format(publication_id, video_id)
+        mzid = f"{publication_id}${video_id}"
         return self.update_video_for_mzid(item, mzid)
 
     def update_video_for_mzid(self, item, mzid, live=False):  # NOSONAR

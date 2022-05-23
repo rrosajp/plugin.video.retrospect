@@ -40,55 +40,54 @@ class Channel(chn_class.Channel):
         # setup the urls
         self.baseUrl = "https://www.kijk.nl"
 
-        if self.channelCode is None:
-            self.noImage = "kijkimage.jpg"
-            self.poster = "kijkposter.jpg"
-            self.mainListUri = self.__get_api_query_url(
-                "programs(programTypes:[SERIES],limit:1000)",
-                "{items{__typename,title,description,guid,updated,seriesTvSeasons{id},"
-                "imageMedia{url,label}}}")
+        if self.channelCode is not None:
+            raise ValueError(f"Channel with code '{self.channelCode}' not supported")
 
-            self._add_data_parser("#recentgraphql", preprocessor=self.add_graphql_recents,
-                                  name="GraphQL Recent listing")
+        self.noImage = "kijkimage.jpg"
+        self.poster = "kijkposter.jpg"
+        self.mainListUri = self.__get_api_query_url(
+            "programs(programTypes:[SERIES],limit:1000)",
+            "{items{__typename,title,description,guid,updated,seriesTvSeasons{id},"
+            "imageMedia{url,label}}}")
 
-            self._add_data_parser("https://graph.kijk.nl/graphql?query=query%7Bprograms%28programTypes",
-                                  name="Main GraphQL Program parser", json=True,
-                                  preprocessor=self.add_graphql_extras,
-                                  parser=["data", "programs", "items"], creator=self.create_api_typed_item)
+        self._add_data_parser("#recentgraphql", preprocessor=self.add_graphql_recents,
+                              name="GraphQL Recent listing")
 
-            self._add_data_parser("https://graph.kijk.nl/graphql?query=query%7Bprograms%28guid",
-                                  name="Main GraphQL season overview parser", json=True,
-                                  parser=["data", "programs", "items", 0, "seriesTvSeasons"],
-                                  creator=self.create_api_tvseason_type)
+        self._add_data_parser("https://graph.kijk.nl/graphql?query=query%7Bprograms%28programTypes",
+                              name="Main GraphQL Program parser", json=True,
+                              preprocessor=self.add_graphql_extras,
+                              parser=["data", "programs", "items"], creator=self.create_api_typed_item)
 
-            self._add_data_parser("https://graph.kijk.nl/graphql?query=query%7BprogramsByDate",
-                                  name="Main GraphQL programs per date parser", json=True,
-                                  parser=["data", "programsByDate", 0, "items"],
-                                  creator=self.create_api_typed_item)
+        self._add_data_parser("https://graph.kijk.nl/graphql?query=query%7Bprograms%28guid",
+                              name="Main GraphQL season overview parser", json=True,
+                              parser=["data", "programs", "items", 0, "seriesTvSeasons"],
+                              creator=self.create_api_tvseason_type)
 
-            self._add_data_parser("https://graph.kijk.nl/graphql?query=query%7BtrendingPrograms",
-                                  name="GraphQL trending parser", json=True,
-                                  parser=["data", "trendingPrograms"],
-                                  creator=self.create_api_typed_item)
+        self._add_data_parser("https://graph.kijk.nl/graphql?query=query%7BprogramsByDate",
+                              name="Main GraphQL programs per date parser", json=True,
+                              parser=["data", "programsByDate", 0, "items"],
+                              creator=self.create_api_typed_item)
 
-            self._add_data_parsers(["https://graph.kijk.nl/graphql?operationName=programs",
-                                    "https://graph.kijk.nl/graphql?query=query%7Bprograms%28tvSeasonId"],
-                                   name="GraphQL season video listing parsing", json=True,
-                                   parser=["data", "programs", "items"],
-                                   creator=self.create_api_typed_item)
+        self._add_data_parser("https://graph.kijk.nl/graphql?query=query%7BtrendingPrograms",
+                              name="GraphQL trending parser", json=True,
+                              parser=["data", "trendingPrograms"],
+                              creator=self.create_api_typed_item)
 
-            self._add_data_parser("https://graph.kijk.nl/graphql?query=query%7Bsearch",
-                                  name="GraphQL search", json=True,
-                                  parser=["data", "search", "items"], creator=self.create_api_typed_item)
+        self._add_data_parsers(["https://graph.kijk.nl/graphql?operationName=programs",
+                                "https://graph.kijk.nl/graphql?query=query%7Bprograms%28tvSeasonId"],
+                               name="GraphQL season video listing parsing", json=True,
+                               parser=["data", "programs", "items"],
+                               creator=self.create_api_typed_item)
 
-            self._add_data_parser("https://graph.kijk.nl/graphql-video",
-                                  updater=self.update_graphql_item)
+        self._add_data_parser("https://graph.kijk.nl/graphql?query=query%7Bsearch",
+                              name="GraphQL search", json=True,
+                              parser=["data", "search", "items"], creator=self.create_api_typed_item)
 
-            self._add_data_parser("https://graph.kijk.nl/graphql?operationName=programs",
-                                  updater=self.update_graphql_item)
+        self._add_data_parser("https://graph.kijk.nl/graphql-video",
+                              updater=self.update_graphql_item)
 
-        else:
-            raise ValueError("Channel with code '{}' not supported".format(self.channelCode))
+        self._add_data_parser("https://graph.kijk.nl/graphql?operationName=programs",
+                              updater=self.update_graphql_item)
 
         # setup the main parsing data
         self._add_data_parser("#lastweek",
@@ -162,7 +161,7 @@ class Channel(chn_class.Channel):
 
         # https://api.kijk.nl/v2/templates/page/missed/all/20180201
         days = ["Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag", "Zondag"]
-        for i in range(0, 7):
+        for i in range(7):
             date = datetime.datetime.now() - datetime.timedelta(days=i)
             # https://api.kijk.nl/v2/templates/page/missed/all/20180626
             # url = "https://api.kijk.nl/v2/templates/page/missed/all/{0}{1:02d}{2:02d}".format(date.year, date.month, date.day)
@@ -217,8 +216,7 @@ class Channel(chn_class.Channel):
             return self.__update_embedded_video(item)
 
         json = JsonHelper(data)
-        embed_url = json.get_value("metadata", "embedURL")
-        if embed_url:
+        if embed_url := json.get_value("metadata", "embedURL"):
             Logger.warning("Embed URL found. Using that to determine the streams.")
             item.url = embed_url
             try:
@@ -261,8 +259,11 @@ class Channel(chn_class.Channel):
         Logger.warning("No M3u8 data found. Falling back to BrightCove")
         video_id = json.get_value("vpakey")
         # videoId = json.get_value("videoId") -> Not all items have a videoId
-        mpd_manifest_url = "https://embed.kijk.nl/video/%s?width=868&height=491" % (video_id,)
-        referer = "https://embed.kijk.nl/video/%s" % (video_id,)
+        mpd_manifest_url = (
+            f"https://embed.kijk.nl/video/{video_id}?width=868&height=491"
+        )
+
+        referer = f"https://embed.kijk.nl/video/{video_id}"
 
         data = UriHandler.open(mpd_manifest_url, referer=referer)
         # First try to find an M3u8
@@ -319,23 +320,7 @@ class Channel(chn_class.Channel):
             for source in play_list_entry["sources"]:
                 stream_type = source["type"]
                 stream_url = source["file"]
-                stream_drm = source.get("drm")
-
-                if not stream_drm:
-                    has_drm_only = False
-                    if stream_type == "m3u8":
-                        Logger.debug("Found non-encrypted M3u8 stream: %s", stream_url)
-                        M3u8.update_part_with_m3u8_streams(item, stream_url, channel=self)
-                        item.complete = True
-                    elif stream_type == "dash" and adaptive_available:
-                        Logger.debug("Found non-encrypted Dash stream: %s", stream_url)
-                        stream = item.add_stream(stream_url, 1)
-                        Mpd.set_input_stream_addon_input(stream)
-                        item.complete = True
-                    else:
-                        Logger.debug("Unknown stream source: %s", source)
-
-                else:
+                if stream_drm := source.get("drm"):
                     compatible_drm = "widevine"
                     if compatible_drm not in stream_drm or stream_type != "dash":
                         Logger.debug("Found encrypted %s stream: %s", stream_type, stream_url)
@@ -362,8 +347,25 @@ class Channel(chn_class.Channel):
                         stream, license_key=encryption_key)
                     item.complete = True
 
-            subs = [s['file'] for s in play_list_entry.get("tracks", []) if s.get('kind') == "captions"]
-            if subs:
+                else:
+                    has_drm_only = False
+                    if stream_type == "m3u8":
+                        Logger.debug("Found non-encrypted M3u8 stream: %s", stream_url)
+                        M3u8.update_part_with_m3u8_streams(item, stream_url, channel=self)
+                        item.complete = True
+                    elif stream_type == "dash" and adaptive_available:
+                        Logger.debug("Found non-encrypted Dash stream: %s", stream_url)
+                        stream = item.add_stream(stream_url, 1)
+                        Mpd.set_input_stream_addon_input(stream)
+                        item.complete = True
+                    else:
+                        Logger.debug("Unknown stream source: %s", source)
+
+            if subs := [
+                s['file']
+                for s in play_list_entry.get("tracks", [])
+                if s.get('kind') == "captions"
+            ]:
                 subtitle = SubtitleHelper.download_subtitle(subs[0], format="webvtt")
                 item.subtitle = subtitle
 
@@ -390,9 +392,9 @@ class Channel(chn_class.Channel):
 
         mpd_manifest_url = "https:{0}".format(mpd_info["mediaLocator"])
         mpd_data = UriHandler.open(mpd_manifest_url)
-        subtitles = Regexer.do_regex(r'<BaseURL>([^<]+\.vtt)</BaseURL>', mpd_data)
-
-        if subtitles:
+        if subtitles := Regexer.do_regex(
+            r'<BaseURL>([^<]+\.vtt)</BaseURL>', mpd_data
+        ):
             Logger.debug("Found subtitle: %s", subtitles[0])
             subtitle = SubtitleHelper.download_subtitle(subtitles[0], format="webvtt")
             item.subtitle = subtitle
@@ -533,7 +535,7 @@ class Channel(chn_class.Channel):
 
         today = datetime.datetime.now() - datetime.timedelta(hours=5)
         days = LanguageHelper.get_days_list()
-        for i in range(0, 7, 1):
+        for i in range(7):
             air_date = today - datetime.timedelta(i)
             Logger.trace("Adding item for: %s", air_date)
 
@@ -630,14 +632,17 @@ class Channel(chn_class.Channel):
             # List the videos in that season
             season_id = seasons[0]["id"].rsplit("/", 1)[-1]
             url = self.__get_api_query_url(
-                query='programs(tvSeasonId:"{}",programTypes:EPISODE,skip:0,limit:{})'.format(season_id, self.__list_limit),
-                fields=self.__video_fields)
+                query=f'programs(tvSeasonId:"{season_id}",programTypes:EPISODE,skip:0,limit:{self.__list_limit})',
+                fields=self.__video_fields,
+            )
+
         else:
             # Fetch the season information
             url = self.__get_api_query_url(
-                query='programs(guid:"{}")'.format(result_set["guid"]),
-                fields="{items{seriesTvSeasons{id,title,seasonNumber,__typename}}}"
+                query=f'programs(guid:"{result_set["guid"]}")',
+                fields="{items{seriesTvSeasons{id,title,seasonNumber,__typename}}}",
             )
+
 
         item = FolderItem(result_set["title"], url, content_type=contenttype.EPISODES)
         item.description = result_set.get("description")
@@ -717,11 +722,17 @@ class Channel(chn_class.Channel):
 
         season_id = result_set["id"].rsplit("/", 1)[-1]
         url = self.__get_api_query_url(
-            query='programs(tvSeasonId:"{}",programTypes:EPISODE,skip:0,limit:{})'.format(season_id, self.__list_limit),
-            fields=self.__video_fields)
+            query=f'programs(tvSeasonId:"{season_id}",programTypes:EPISODE,skip:0,limit:{self.__list_limit})',
+            fields=self.__video_fields,
+        )
 
-        item = FolderItem(title, url, content_type=contenttype.EPISODES, media_type=mediatype.SEASON)
-        return item
+
+        return FolderItem(
+            title,
+            url,
+            content_type=contenttype.EPISODES,
+            media_type=mediatype.SEASON,
+        )
 
     def create_api_episode_type(self, result_set):
         """ Creates a new MediaItem for an episode.
@@ -774,7 +785,7 @@ class Channel(chn_class.Channel):
 
         # DRM only
         no_drm_items = [src for src in result_set["sources"] if not src["drm"]]
-        item.isDrmProtected = len(no_drm_items) == 0
+        item.isDrmProtected = not no_drm_items
         return item
 
     def update_graphql_item(self, item):
@@ -802,7 +813,7 @@ class Channel(chn_class.Channel):
                 stream = item.add_stream(url, bitrate)
                 item.complete = Mpd.set_input_stream_addon_input(stream)
 
-            elif stream_type == "dash" and drm and "widevine" in drm:
+            elif stream_type == "dash" and "widevine" in drm:
                 bitrate = 0 if hls_over_dash else 1
                 stream = item.add_stream(url, bitrate)
 
@@ -821,8 +832,12 @@ class Channel(chn_class.Channel):
                     key_url=key_url,
                     key_type="b",
                     key_value=encryption_json,
-                    key_headers={"Content-Type": "application/json", "authorization": "Basic {}".format(token)}
+                    key_headers={
+                        "Content-Type": "application/json",
+                        "authorization": f"Basic {token}",
+                    },
                 )
+
                 Mpd.set_input_stream_addon_input(stream, license_key=encryption_key)
                 item.complete = True
 
@@ -859,13 +874,13 @@ class Channel(chn_class.Channel):
         thumb_set = False
         for img in image_data:
             if "_landscape" in img["label"] and "thumb" in mode:
-                url = "https://cldnr.talpa.network/talpa-network/image/fetch/" \
-                      "ar_16:9,c_scale,f_auto,h_1080,w_auto/{}".format(img["url"])
+                url = f'https://cldnr.talpa.network/talpa-network/image/fetch/ar_16:9,c_scale,f_auto,h_1080,w_auto/{img["url"]}'
+
                 item.set_artwork(thumb=url)
                 thumb_set = True
             elif "_portrait" in img["label"] and "poster" in mode:
-                url = "https://cldnr.talpa.network/talpa-network/image/fetch/" \
-                      "ar_2:3,c_scale,f_auto,h_750,w_auto/{}".format(img["url"])
+                url = f'https://cldnr.talpa.network/talpa-network/image/fetch/ar_2:3,c_scale,f_auto,h_750,w_auto/{img["url"]}'
+
                 item.set_artwork(poster=url)
 
         # If it fails, return the first one.
@@ -874,9 +889,9 @@ class Channel(chn_class.Channel):
 
     def __get_api_query_url(self, query, fields):
         result = "query{%s%s}" % (query, fields)
-        return "https://graph.kijk.nl/graphql?query={}".format(HtmlEntityHelper.url_encode(result))
+        return f"https://graph.kijk.nl/graphql?query={HtmlEntityHelper.url_encode(result)}"
 
-    def __get_api_persisted_url(self, operation, hash_value, variables):  # NOSONAR
+    def __get_api_persisted_url(self, operation, hash_value, variables):    # NOSONAR
         """ Generates a GraphQL url
 
         :param str operation:   The operation to use
@@ -893,9 +908,5 @@ class Channel(chn_class.Channel):
 
         variables = HtmlEntityHelper.url_encode(JsonHelper.dump(variables, pretty_print=False))
 
-        url = "https://graph.kijk.nl/graphql?" \
-              "operationName={}&" \
-              "variables={}&" \
-              "extensions={}".format(operation, variables, extensions)
-        return url
+        return f"https://graph.kijk.nl/graphql?operationName={operation}&variables={variables}&extensions={extensions}"
     #endregion

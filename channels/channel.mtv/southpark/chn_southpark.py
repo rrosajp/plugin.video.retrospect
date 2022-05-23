@@ -31,15 +31,14 @@ class Channel(chn_class.Channel):
         # setup the urls
         self.swfUrl = "http://media.mtvnservices.com/player/prime/mediaplayerprime.1.12.5.swf"
         if self.channelCode == "southpark.se":
-            self.noImage = "southparkimage.png"
             self.mainListUri = "http://www.southparkstudios.se/full-episodes/"
             self.baseUrl = "http://www.southparkstudios.se"
             self.promotionId = None
         else:
-            self.noImage = "southparkimage.png"
             self.mainListUri = "http://www.southpark.nl/episodes/"
             self.baseUrl = "http://www.southpark.nl"
 
+        self.noImage = "southparkimage.png"
         # setup the main parsing data
         self.episodeItemRegex = r'(?:data-promoId="([^"]+)"|<li[^>]*>\W*<a[^>]+href="([^"]+episodes/season[^"]+)">(\d+)</a>)'  # used for the ParseMainList
         self.videoItemRegex = r'(\{[^}]+)'
@@ -61,7 +60,7 @@ class Channel(chn_class.Channel):
 
         """
 
-        if not result_set[0] == "":
+        if result_set[0] != "":
             self.promotionId = result_set[0]
             Logger.debug("Setting PromotionId to: %s", result_set[0])
             return None
@@ -71,7 +70,8 @@ class Channel(chn_class.Channel):
         #    url = "%s/ajax/seasonepisode/%s" % (self.baseUrl, result_set[2])
         #    url = http://www.southpark.nl/feeds/full-episode/carousel/14/424b7b57-e459-4c9c-83ca-9b924350e94d
         # else:
-        url = "%s/feeds/full-episode/carousel/%s/%s" % (self.baseUrl, result_set[2], self.promotionId)
+        url = f"{self.baseUrl}/feeds/full-episode/carousel/{result_set[2]}/{self.promotionId}"
+
 
         item = MediaItem("Season %02d" % int(result_set[2]), url)
         item.complete = True
@@ -169,8 +169,12 @@ class Channel(chn_class.Channel):
             Logger.debug("Processing part with GUID: %s", guid)
 
             # http://www.southpark.nl/feeds/video-player/mediagen?uri=mgid%3Aarc%3Aepisode%3Acomedycentral.com%3Aeb2a53f7-e370-4049-a6a9-57c195367a92&suppressRegisterBeacon=true
-            guid = HtmlEntityHelper.url_encode("mgid:arc:episode:comedycentral.com:%s" % (guid,))
-            info_url = "%s/feeds/video-player/mediagen?uri=%s&suppressRegisterBeacon=true" % (self.baseUrl, guid)
+            guid = HtmlEntityHelper.url_encode(
+                f"mgid:arc:episode:comedycentral.com:{guid}"
+            )
+
+            info_url = f"{self.baseUrl}/feeds/video-player/mediagen?uri={guid}&suppressRegisterBeacon=true"
+
 
             # 2- Get the GUIDS for the different ACTS
             info_data = UriHandler.open(info_url)

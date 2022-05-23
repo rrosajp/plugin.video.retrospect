@@ -106,7 +106,7 @@ class Channel(chn_class.Channel):
         more = LanguageHelper.get_localized_string(LanguageHelper.MorePages)
         current_url = self.parentItem.url if self.parentItem is not None else self.mainListUri
         url, page = current_url.rsplit("=", 1)
-        url = "{}={}".format(url, int(page) + 1)
+        url = f"{url}={int(page) + 1}"
 
         item = MediaItem(more, url)
         item.complete = True
@@ -138,7 +138,7 @@ class Channel(chn_class.Channel):
             return item
 
         time_stamp = DateHelper.get_date_from_string(result_set["date"], "%d-%m-%Y %H:%M")
-        item.set_date(*time_stamp[0:6])
+        item.set_date(*time_stamp[:6])
         return item
 
     def update_video_item(self, item):
@@ -204,11 +204,10 @@ class Channel(chn_class.Channel):
         if AddonSettings.use_adaptive_stream_add_on():
             stream = item.add_stream(item.url, 0)
             M3u8.set_input_stream_addon_input(stream)
-            item.complete = True
         else:
 
             for s, b in M3u8.get_streams_from_m3u8(item.url):
                 item.complete = True
                 item.add_stream(s, b)
-            item.complete = True
+        item.complete = True
         return item

@@ -87,7 +87,7 @@ class Channel(chn_class.Channel):
         # non standard items
 
         self.searchUrl = "http://feeds.bbc.co.uk/iplayer/search/tv/?q=%s"
-        self.programs = dict()
+        self.programs = {}
 
         # ===============================================================================================================
         # Test cases:
@@ -115,13 +115,13 @@ class Channel(chn_class.Channel):
 
         url = result_set['href']
         if not url.startswith("http"):
-            url = "{}{}".format(self.baseUrl, url)
+            url = f"{self.baseUrl}{url}"
 
         title = result_set["title"]
         if title is None:
             title = self.parentItem.name
         elif append_subtitle and "subtitle" in result_set:
-            title = "{} - {}".format(title, result_set["subtitle"])
+            title = f'{title} - {result_set["subtitle"]}'
 
         item = MediaItem(title, url)
         item.description = result_set.get('synopsis', item.description)
@@ -179,7 +179,7 @@ class Channel(chn_class.Channel):
         brand = item.url[item.url.rindex("/") + 1:]
 
         # to match the first video regex: item.url = "http://www.bbc.co.uk/programmes/%s/episodes/player" % (brand, )
-        item.url = "http://www.bbc.co.uk/iplayer/episodes/%s" % (brand,)
+        item.url = f"http://www.bbc.co.uk/iplayer/episodes/{brand}"
         item.isGeoLocked = True
         return item
 
@@ -234,7 +234,8 @@ class Channel(chn_class.Channel):
         data = UriHandler.open(item.url)
         json_data, _ = self.extract_json(data)
         video_id = json_data.get_value("versions", 0, "id")
-        stream_data_url = "http://open.live.bbc.co.uk/mediaselector/5/select/version/2.0/mediaset/iptv-all/vpid/{}".format(video_id)
+        stream_data_url = f"http://open.live.bbc.co.uk/mediaselector/5/select/version/2.0/mediaset/iptv-all/vpid/{video_id}"
+
 
         # this URL is one from the webbrowser but requires a security part. So NOT:
         # streamDataUrl = "http://open.live.bbc.co.uk/mediaselector/5/select/version
@@ -318,7 +319,7 @@ class Channel(chn_class.Channel):
             stream_data)
         if len(subtitles) > 0:
             subtitle = subtitles[0]
-            subtitle_url = "%s%s" % (subtitle[0], subtitle[1])
+            subtitle_url = f"{subtitle[0]}{subtitle[1]}"
             item.subtitle = subtitlehelper.SubtitleHelper.download_subtitle(
                 subtitle_url, subtitle[1], "ttml")
 
@@ -344,8 +345,6 @@ class Channel(chn_class.Channel):
         """
 
         Logger.info("Generating Live channels")
-        items = []
-
         live_channels = [
             {"name": "BBC 1 HD", "code": "bbc_one_hd", "image": "bbc1large.png"},
             {"name": "BBC 2 HD", "code": "bbc_two_hd", "image": "bbc2large.png"},
@@ -369,8 +368,7 @@ class Channel(chn_class.Channel):
 
         live = MediaItem("Live Channels", "")
         live.dontGroup = True
-        items.append(live)
-
+        items = [live]
         for channel in live_channels:
             url = "http://a.files.bbci.co.uk/media/live/manifesto/audio_video/simulcast/hds/uk/pc/ak/%(code)s.f4m" % channel
             item = MediaItem(channel["name"], url)
@@ -433,7 +431,7 @@ class Channel(chn_class.Channel):
         # 327	301	HTTPS	www.bbc.co.uk	/iplayer/episodes/b03srr0b	94	no-store, must-revalidate, max-age=0	text/plain; charset=utf-8	kodi:14240
         # 328	200	HTTPS	www.bbc.co.uk	/iplayer/episodes/b03srr0b/absolute-genius-with-dick-and-dom	60.571	no-store, must-revalidate, max-age=0	text/html; charset=utf-8	kodi:14240
         show_id = json_data.get_value("episode", "tleoId")
-        url = "{}/iplayer/episodes/{}".format(self.baseUrl, show_id)
+        url = f"{self.baseUrl}/iplayer/episodes/{show_id}"
         data = UriHandler.open(url)
         json_data, items = self.extract_json(data)
         return json_data, items

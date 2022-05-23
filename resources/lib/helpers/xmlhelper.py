@@ -31,17 +31,10 @@ class XmlHelper(TagHelperBase):
         
         """
         
-        if "stripCData" in kwargs:
-            strip_cdata = kwargs["stripCData"]
-        else:
-            strip_cdata = False
-        
+        strip_cdata = kwargs["stripCData"] if "stripCData" in kwargs else False
         result = self.get_nodes_content(node_tag, *args)
         if len(result) > 0:
-            if strip_cdata:
-                return XmlHelper.__strip_cdata(result[0])
-            else:
-                return result[0]
+            return XmlHelper.__strip_cdata(result[0]) if strip_cdata else result[0]
         else:
             return ""
     
@@ -61,8 +54,8 @@ class XmlHelper(TagHelperBase):
         
         """
         
-        regex = "<%s" % (node_tag,)
-        
+        regex = f"<{node_tag}"
+
         for arg in args:
             regex += r'[^>]*%s\W*=\W*"%s"' % (list(arg.keys())[0], arg[list(arg.keys())[0]])
             # just do one pass

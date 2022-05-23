@@ -79,8 +79,6 @@ class Channel(chn_class.Channel):
         """
 
         Logger.info("Performing Pre-Processing")
-        items = []
-
         if '>Populair<' in data:
             data = data[data.index('>Populair<'):]
         if '>L1-kanalen<' in data:
@@ -91,8 +89,7 @@ class Channel(chn_class.Channel):
         # add live items
         title = LanguageHelper.get_localized_string(LanguageHelper.LiveStreamTitleId)
         item = MediaItem("\a.: {} :.".format(title), "")
-        items.append(item)
-
+        items = [item]
         live_item = MediaItem("L1VE TV".format(title), "#livetv")
         live_item.media_type = mediatype.EPISODE
         live_item.isLive = True
@@ -145,7 +142,7 @@ class Channel(chn_class.Channel):
 
         item = chn_class.Channel.create_video_item(self, result_set)
         if not item.thumb.startswith("http"):
-            item.thumb = "%s/%s" % (self.baseUrl, item.thumb)
+            item.thumb = f"{self.baseUrl}/{item.thumb}"
         return item
 
     def update_live_stream(self, item):
@@ -213,7 +210,7 @@ class Channel(chn_class.Channel):
                 Logger.warning("Cannot find stream-id for L1 stream.")
                 return item
 
-            data_url = "https://limburg.bbvms.com/p/L1_video/c/{}.json".format(data_id[0])
+            data_url = f"https://limburg.bbvms.com/p/L1_video/c/{data_id[0]}.json"
         else:
             data_url = item.url
 
@@ -227,7 +224,7 @@ class Channel(chn_class.Channel):
         for stream in streams:
             url = stream.get("src", None)
             if "://" not in url:
-                url = "{}{}".format(base_url, url)
+                url = f"{base_url}{url}"
             bitrate = stream.get("bandwidth", None)
             if url:
                 item.add_stream(url, bitrate)
@@ -235,7 +232,7 @@ class Channel(chn_class.Channel):
         if not item.thumb and json.get_value("thumbnails"):
             url = json.get_value("thumbnails")[0].get("src", None)
             if url and "http:/" not in url:
-                url = "%s%s" % (self.baseUrl, url)
+                url = f"{self.baseUrl}{url}"
             item.thumb = url
         item.complete = True
         return item

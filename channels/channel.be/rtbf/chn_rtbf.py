@@ -104,9 +104,10 @@ class Channel(chn_class.Channel):
         items = []
 
         sub_items = {
-            "\a.: Direct :.": "%s/auvio/direct/" % (self.baseUrl, ),
-            "\a.: Cat&eacute;gories :.": "http://www.rtbf.be/news/api/menu?site=media"
+            "\a.: Direct :.": f"{self.baseUrl}/auvio/direct/",
+            "\a.: Cat&eacute;gories :.": "http://www.rtbf.be/news/api/menu?site=media",
         }
+
 
         for k, v in sub_items.items():
             item = MediaItem(k, v)
@@ -136,7 +137,8 @@ class Channel(chn_class.Channel):
         if item is None:
             return item
 
-        item.url = "%s/auvio/archives?pid=%s&contentType=complete" % (self.baseUrl, result_set["id"])
+        item.url = f'{self.baseUrl}/auvio/archives?pid={result_set["id"]}&contentType=complete'
+
         return item
 
     def create_category(self, result_set):
@@ -162,7 +164,8 @@ class Channel(chn_class.Channel):
         # u'name': u'Football'
         # }
         cid = result_set["id"].split("-")[-1]
-        url = "%s/auvio/archives?caid=%s&contentType=complete,extract,bonus" % (self.baseUrl, cid)
+        url = f"{self.baseUrl}/auvio/archives?caid={cid}&contentType=complete,extract,bonus"
+
         item = MediaItem(result_set["name"], url)
         item.complete = True
         return item
@@ -191,7 +194,8 @@ class Channel(chn_class.Channel):
         """
 
         item = chn_class.Channel.create_page_item(self, result_set)
-        url = "%s/auvio/archives%s%s" % (self.baseUrl, HtmlEntityHelper.url_decode(result_set[0]), result_set[1])
+        url = f"{self.baseUrl}/auvio/archives{HtmlEntityHelper.url_decode(result_set[0])}{result_set[1]}"
+
         item.url = url
         return item
 
@@ -220,17 +224,17 @@ class Channel(chn_class.Channel):
 
         # http://www.rtbf.be/auvio/embed/media?id=2101078&autoplay=1
         if "videoId" in result_set:
-            item.url = "%s/auvio/embed/media?id=%s" % (self.baseUrl, result_set["videoId"])
+            item.url = f'{self.baseUrl}/auvio/embed/media?id={result_set["videoId"]}'
         elif "liveId" in result_set:
-            item.name = "%s - %s" % (result_set["channel"].strip(), item.name)
-            item.url = "%s/auvio/embed/direct?id=%s" % (self.baseUrl, result_set["liveId"])
+            item.name = f'{result_set["channel"].strip()} - {item.name}'
+            item.url = f'{self.baseUrl}/auvio/embed/direct?id={result_set["liveId"]}'
             item.isLive = True
 
         if "date" in result_set:
             # 2016-05-14T20:00:00+02:00 -> strip the hours
             time_stamp = DateHelper.get_date_from_string(
                 result_set["date"].rsplit("+")[0], "%Y-%m-%dT%H:%M:%S")
-            item.set_date(*time_stamp[0:6])
+            item.set_date(*time_stamp[:6])
 
         return item
 
@@ -249,16 +253,19 @@ class Channel(chn_class.Channel):
             url = media_sources[quality]
             if quality == "high":
                 bitrate = 2000
-            elif quality == "web":
-                bitrate = 800
             elif quality == "mobile":
                 bitrate = 400
+            elif quality == "web":
+                bitrate = 800
             else:
                 bitrate = 0
             item.add_stream(url, bitrate)
 
         # geoLocRestriction
-        item.isGeoLocked = not media_info.get_value("geoLocRestriction", fallback="world") == "world"
+        item.isGeoLocked = (
+            media_info.get_value("geoLocRestriction", fallback="world") != "world"
+        )
+
         item.complete = True
         return item
 
@@ -288,8 +295,8 @@ class Channel(chn_class.Channel):
         else:
             Logger.debug("No HLS url found for %s. Fetching RTMP Token.", media_info.json["streamName"])
             # fetch the token:
-            token_url = "%s/api/media/streaming?streamname=%s" \
-                        % (self.baseUrl, media_info.json["streamName"])
+            token_url = f'{self.baseUrl}/api/media/streaming?streamname={media_info.json["streamName"]}'
+
 
             token_data = UriHandler.open(token_url,
                                          additional_headers=item.HttpHeaders, no_cache=True)
@@ -298,11 +305,14 @@ class Channel(chn_class.Channel):
             token = token_data.get_value("token")
             Logger.debug("Found token '%s' for '%s'", token, media_info.json["streamName"])
 
-            rtmp_url = "rtmp://rtmp.rtbf.be/livecast/%s?%s pageUrl=%s tcUrl=rtmp://rtmp.rtbf.be/livecast" \
-                       % (media_info.json["streamName"], token, self.baseUrl)
+            rtmp_url = f'rtmp://rtmp.rtbf.be/livecast/{media_info.json["streamName"]}?{token} pageUrl={self.baseUrl} tcUrl=rtmp://rtmp.rtbf.be/livecast'
+
             rtmp_url = self.get_verifiable_video_url(rtmp_url)
             item.add_stream(rtmp_url, 0)
             item.complete = True
 
-        item.isGeoLocked = not media_info.get_value("geoLocRestriction", fallback="world") == "world"
+        item.isGeoLocked = (
+            media_info.get_value("geoLocRestriction", fallback="world") != "world"
+        )
+
         return item

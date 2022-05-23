@@ -45,6 +45,11 @@ class TestSrfChannel(ChannelTest):
         item = self._test_video_url(url)
         streams = [i for i in item.streams if "mpd" in i.Url]
         self.assertEqual(1, len(streams))
-        property_addon = [p for p in streams[0].Properties if "inputstream" == p[0] or "inputstreamaddon" == p[0]]
+        property_addon = [
+            p
+            for p in streams[0].Properties
+            if p[0] in ["inputstream", "inputstreamaddon"]
+        ]
+
         self.assertEqual(1, len(property_addon))
         self.assertEqual(property_addon[0][1], "inputstream.adaptive")

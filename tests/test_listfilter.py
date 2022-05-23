@@ -48,7 +48,9 @@ class TestListFilter(ChannelTest):
         AddonSettings.store(KODI).set_setting("hide_premium", "false")
 
     def __get_items(self):
-        items = self._test_folder_url(
+        return self._test_folder_url(
             "https://start-api.npo.nl/media/series/KN_1689408/episodes?pageSize=500",
-            expected_results=1, headers={"apikey": "07896f1ee72645f68bc75581d7f00d54"}, retry=0)
-        return items
+            expected_results=1,
+            headers={"apikey": "07896f1ee72645f68bc75581d7f00d54"},
+            retry=0,
+        )

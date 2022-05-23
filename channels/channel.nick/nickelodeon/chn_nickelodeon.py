@@ -144,7 +144,7 @@ class Channel(chn_class.Channel):
 
                 # Get the actual full episode list
                 all_episodes = json_data.get_value("filters", "items", 0, "url")
-                url_all_episodes = "{}{}".format(self.baseUrl, all_episodes)
+                url_all_episodes = f"{self.baseUrl}{all_episodes}"
                 data = UriHandler.open(url_all_episodes)
                 json_data = JsonHelper(data)
 
@@ -196,13 +196,12 @@ class Channel(chn_class.Channel):
         Logger.info("Performing Pre-Processing")
         items = []
 
-        url = "{}{}".format(self.baseUrl, result_set["url"])
+        url = f'{self.baseUrl}{result_set["url"]}'
         data = UriHandler.open(url)
         json_data = JsonHelper(data)
         result_sets = json_data.get_value("items", fallback=[])
         for result_set in result_sets:
-            item = self.create_json_episode_item(result_set)
-            if item:
+            if item := self.create_json_episode_item(result_set):
                 items.append(item)
 
         return items
@@ -224,7 +223,7 @@ class Channel(chn_class.Channel):
         Logger.trace(result_set)
         meta = result_set["meta"]
         name = meta["header"]["title"]
-        url = "{}{}".format(self.baseUrl, result_set["url"])
+        url = f'{self.baseUrl}{result_set["url"]}'
 
         item = MediaItem(name, url)
         item.description = meta.get("description")
@@ -253,7 +252,7 @@ class Channel(chn_class.Channel):
 
         """
 
-        url = "{}{}".format(self.baseUrl, result_set["url"])
+        url = f'{self.baseUrl}{result_set["url"]}'
         item = FolderItem(result_set["label"], url, content_type=contenttype.EPISODES, media_type=mediatype.SEASON)
         item.metaData["is_season"] = True
         return item
@@ -283,11 +282,10 @@ class Channel(chn_class.Channel):
         if isinstance(name, dict):
             name = name["text"]
 
-        sub_heading = meta.get("subHeader")
-        if sub_heading:
-            name = "{} - {}".format(name, sub_heading)
+        if sub_heading := meta.get("subHeader"):
+            name = f"{name} - {sub_heading}"
 
-        url = "{}{}".format(self.baseUrl, result_set["url"])
+        url = f'{self.baseUrl}{result_set["url"]}'
         item = MediaItem(name, url, media_type=EPISODE)
         item.description = meta.get("description")
         item.thumb = result_set.get("media", {}).get("image", {}).get("url")
@@ -301,7 +299,7 @@ class Channel(chn_class.Channel):
             date = DateHelper.get_date_from_string(date_value, date_format="%d.%m.%Y")
         else:
             date = DateHelper.get_date_from_string(date_value, date_format="%d/%m/%Y")
-        item.set_date(*date[0:6])
+        item.set_date(*date[:6])
 
         return item
 
@@ -333,14 +331,15 @@ class Channel(chn_class.Channel):
 
         data = UriHandler.open(item.url)
         video_id = Regexer.do_regex(r'{"video":{"config":{"uri":"([^"]+)', data)[0]
-        url = "http://media.mtvnservices.com/pmt/e1/access/index.html?uri={}&configtype=edge".format(video_id)
+        url = f"http://media.mtvnservices.com/pmt/e1/access/index.html?uri={video_id}&configtype=edge"
+
         meta_data = UriHandler.open(url, referer=self.baseUrl)
         meta = JsonHelper(meta_data)
         stream_parts = meta.get_value("feed", "items")
         for stream_part in stream_parts:
             stream_url = stream_part["group"]["content"]
             stream_url = stream_url.replace("&device={device}", "")
-            stream_url = "%s&format=json&acceptMethods=hls" % (stream_url,)
+            stream_url = f"{stream_url}&format=json&acceptMethods=hls"
             stream_data = UriHandler.open(stream_url)
             stream = JsonHelper(stream_data)
 

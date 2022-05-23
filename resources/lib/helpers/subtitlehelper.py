@@ -64,10 +64,10 @@ class SubtitleHelper(object):
 
         if file_name == "":
             Logger.debug("No filename present, generating filename using MD5 hash of url.")
-            file_name = "%s.srt" % (EncodingHelper.encode_md5(url),)
+            file_name = f"{EncodingHelper.encode_md5(url)}.srt"
         elif not file_name.endswith(".srt"):
             Logger.debug("No SRT extension present, appending it.")
-            file_name = "%s.srt" % (file_name,)
+            file_name = f"{file_name}.srt"
 
         srt = ""
         try:
@@ -269,14 +269,24 @@ class SubtitleHelper(object):
                 count += 1
                 start, end = line.split(" --> ")
                 result = "%s\n\n%s" % (result, count)
-                if start.count(":") == 1:
-                    result = "%s\n00:%s --> 00:%s" % (result, start.replace(".", ","), end.replace(".", ","))
-                else:
-                    result = "%s\n%s --> %s" % (result, start.replace(".", ","), end.replace(".", ","))
-            elif line == str(count + 1):
+                result = (
+                    "%s\n00:%s --> 00:%s"
+                    % (result, start.replace(".", ","), end.replace(".", ","))
+                    if start.count(":") == 1
+                    else "%s\n%s --> %s"
+                    % (result, start.replace(".", ","), end.replace(".", ","))
+                )
+
+            elif (
+                " --> " not in line
+                and line == str(count + 1)
+                or " --> " not in line
+                and line != str(count + 1)
+                and Regexer.do_regex(
+                    "^[0-9a-f]{8}-?([0-9a-f]{4}-?){3}[0-9a-f]{12}", line
+                )
+            ):
                 # we apparently have built-in numbering using WebVTT cue-numbering
-                continue
-            elif Regexer.do_regex("^[0-9a-f]{8}-?([0-9a-f]{4}-?){3}[0-9a-f]{12}", line):
                 continue
             else:
                 result = "%s\n%s" % (result, HtmlEntityHelper.convert_html_entities(line))
@@ -364,17 +374,12 @@ class SubtitleHelper(object):
     def __convert_m3u8_srt_to_subtitle_to_srt(raw, url):
         # Find the VTT line in the subtitle
         lines = raw.split("\n")
-        sub_url = None
-        for line in lines:
-            if ".vtt" in line:
-                sub_url = line
-                break
-
+        sub_url = next((line for line in lines if ".vtt" in line), None)
         if not sub_url:
             return ""
 
         if not sub_url.startswith("http"):
-            sub_url = "%s/%s" % (url.rsplit("/", 1)[0], sub_url)
+            sub_url = f'{url.rsplit("/", 1)[0]}/{sub_url}'
 
         # Now we know the subtitle, it would be wise to just use the existing converters to just
         # convert the data, but now now
@@ -418,8 +423,7 @@ class SubtitleHelper(object):
         """
         msecs = timestamp[-3:]
         secs = int(timestamp) // 1000
-        sync = time.strftime("%H:%M:%S", time.gmtime(secs)) + ',' + msecs
-        return sync
+        return time.strftime("%H:%M:%S", time.gmtime(secs)) + ',' + msecs
 
     @staticmethod
     def __transform(raw, sub_format, url):
@@ -449,7 +453,7 @@ class SubtitleHelper(object):
         elif sub_format.lower() == 'm3u8srt':
             srt = SubtitleHelper.__convert_m3u8_srt_to_subtitle_to_srt(raw, url)
         else:
-            error = "Unknown subtitle format: %s" % (sub_format,)
+            error = f"Unknown subtitle format: {sub_format}"
             raise NotImplementedError(error)
 
         return srt

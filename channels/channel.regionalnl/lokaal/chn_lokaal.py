@@ -134,7 +134,7 @@ class Channel(chn_class.Channel):
 
         return data, items
 
-    def process_live_items(self, data):  # NOSONAR
+    def process_live_items(self, data):    # NOSONAR
         """ Performs pre-process actions that either return multiple live channels that are present
         in the live url or an actual list item if a single live stream is present.
 
@@ -158,7 +158,8 @@ class Channel(chn_class.Channel):
 
         if self.liveUrl.endswith(".m3u8"):
             # We actually have a single stream.
-            title = "{} - {}".format(self.channelName, LanguageHelper.get_localized_string(LanguageHelper.LiveStreamTitleId))
+            title = f"{self.channelName} - {LanguageHelper.get_localized_string(LanguageHelper.LiveStreamTitleId)}"
+
             live_item = MediaItem(title, self.liveUrl, media_type=mediatype.VIDEO)
             live_item.isLive = True
             if self.channelCode == "rtvdrenthe":
@@ -186,7 +187,7 @@ class Channel(chn_class.Channel):
         live_stream_value = None
         for streams in live_streams:
             Logger.debug("Adding live stream")
-            title = streams.get('name') or "%s - Live TV" % (self.channelName, )
+            title = streams.get('name') or f"{self.channelName} - Live TV"
 
             live_item = MediaItem(title, self.liveUrl, media_type=mediatype.VIDEO)
             live_item.complete = True
@@ -196,15 +197,14 @@ class Channel(chn_class.Channel):
                 bitrate = None
 
                 # used in Omrop Fryslan
-                if stream == "android" or stream == "iPhone":
+                if stream in ["android", "iPhone"]:
                     bitrate = 250
                     url = streams[stream]["videoLink"]
                 elif stream == "iPad":
                     bitrate = 1000
                     url = streams[stream]["videoLink"]
 
-                # used in RTV Utrecht
-                elif stream == "androidLink" or stream == "iphoneLink":
+                elif stream in ["androidLink", "iphoneLink"]:
                     bitrate = 250
                     url = streams[stream]
                 elif stream == "ipadLink":
@@ -213,14 +213,6 @@ class Channel(chn_class.Channel):
                 elif stream == "tabletLink":
                     bitrate = 300
                     url = streams[stream]
-
-                # These windows stream won't work
-                # elif stream == "windowsLink":
-                #     bitrate = 1200
-                #     url = streams[stream]
-                # elif stream == "wpLink":
-                #     bitrate = 1200
-                #     url = streams[stream]
 
                 elif stream == "name":
                     Logger.trace("Ignoring stream '%s'", stream)
@@ -232,7 +224,7 @@ class Channel(chn_class.Channel):
                 # noinspection PyUnboundLocalVariable
                 if "livestreams.omroep.nl/live/" in url and url.endswith("m3u8"):
                     Logger.info("Found NPO Stream, adding ?protection=url")
-                    url = "%s?protection=url" % (url, )
+                    url = f"{url}?protection=url"
 
                 if bitrate:
                     live_item.add_stream(url, bitrate)
@@ -278,7 +270,7 @@ class Channel(chn_class.Channel):
             return None
 
         if title.islower():
-            title = "%s%s" % (title[0].upper(), title[1:])
+            title = f"{title[0].upper()}{title[1:]}"
 
         link = result_set.get("feedLink")
         if not link.startswith("http"):
@@ -324,16 +316,15 @@ class Channel(chn_class.Channel):
         if media_link:
             item.add_stream(media_link, self.channelBitrate)
 
-        # get the thumbs from multiple locations
-        thumb_urls = result_set.get("images", None)
-        thumb_url = None
-        if thumb_urls:
-            # noinspection PyUnresolvedReferences
-            thumb_url = \
-                thumb_urls[0].get("fullScreenLink", None) or \
-                thumb_urls[0].get("previewLink", None) or \
-                result_set.get("imageLink", None)
+        if thumb_urls := result_set.get("images", None):
+            thumb_url = (
+                thumb_urls[0].get("fullScreenLink", None)
+                or thumb_urls[0].get("previewLink", None)
+                or result_set.get("imageLink", None)
+            )
 
+        else:
+            thumb_url = None
         if thumb_url and not thumb_url.startswith("http"):
             thumb_url = parse.urljoin(self.baseUrl, thumb_url)
 
@@ -342,8 +333,7 @@ class Channel(chn_class.Channel):
 
         item.description = HtmlHelper.to_text(result_set.get("text"))
 
-        posix = result_set.get("timestamp", None)
-        if posix:
+        if posix := result_set.get("timestamp", None):
             broadcast_date = DateHelper.get_date_from_posix(int(posix))
             item.set_date(broadcast_date.year,
                           broadcast_date.month,
@@ -416,11 +406,9 @@ class Channel(chn_class.Channel):
         if AddonSettings.use_adaptive_stream_add_on():
             stream = item.add_stream(url, 0)
             M3u8.set_input_stream_addon_input(stream, item.HttpHeaders)
-            item.complete = True
         else:
             for s, b in M3u8.get_streams_from_m3u8(url, append_query_string=True):
                 item.complete = True
                 item.add_stream(s, b)
-            item.complete = True
-
+        item.complete = True
         return item

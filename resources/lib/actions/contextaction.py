@@ -31,12 +31,12 @@ class ContextMenuAction(AddonAction):
             Logger.debug("The contextmenu action requires a completed item. Updating %s", item)
             item = self.__channel.process_video_item(item)
 
-            if not item.complete:
-                Logger.warning(
-                    "update_video_item returned an item that had item.complete = False:\n%s", item)
+        if not item.complete:
+            Logger.warning(
+                "update_video_item returned an item that had item.complete = False:\n%s", item)
 
         # invoke the call
-        function_string = "returnItem = channel_object.%s(item)" % (self.__action,)
+        function_string = f"returnItem = channel_object.{self.__action}(item)"
         Logger.debug("Calling '%s'", function_string)
         try:
             # noinspection PyRedundantParentheses

@@ -43,14 +43,12 @@ class Channel(chn_class.Channel):
         # ============== Actual channel setup STARTS here and should be overwritten from derived classes ===============
         self.noImage = "nosimage.png"
 
-        # setup the urls
-        if self.channelCode == "uzgjson":
-            self.baseUrl = "https://apps-api.uitzendinggemist.nl"
-            self.mainListUri = "#mainlist"
-            self.noImage = "nosimage.png"
-        else:
-            raise NotImplementedError("Code %s is not implemented" % (self.channelCode,))
+        if self.channelCode != "uzgjson":
+            raise NotImplementedError(f"Code {self.channelCode} is not implemented")
 
+        self.baseUrl = "https://apps-api.uitzendinggemist.nl"
+        self.mainListUri = "#mainlist"
+        self.noImage = "nosimage.png"
         # mainlist stuff
         self._add_data_parser("#mainlist", preprocessor=self.get_initial_folder_items)
 
@@ -264,10 +262,10 @@ class Channel(chn_class.Channel):
         UriHandler.open("https://id.npo.nl/account/login", no_cache=True, data=data)
 
         # The callback url to finish up.
-        UriHandler.open("https://id.npo.nl{}".format(redirect_url), no_cache=True)
+        UriHandler.open(f"https://id.npo.nl{redirect_url}", no_cache=True)
         return not UriHandler.instance().status.error
 
-    def extract_tiles(self, data):  # NOSONAR
+    def extract_tiles(self, data):    # NOSONAR
         """ Extracts the JSON tiles data from the HTML.
 
         :param str data: The retrieve data that was loaded for the current item and URL.
@@ -297,18 +295,18 @@ class Channel(chn_class.Channel):
         query_string = self.parentItem.url.split("&", 1)[-1]
 
         http_headers = {"X-Requested-With": "XMLHttpRequest"}
-        http_headers.update(self.parentItem.HttpHeaders)
-        http_headers.update(self.httpHeaders)
+        http_headers |= self.parentItem.HttpHeaders
+        http_headers |= self.httpHeaders
         while next_page and current_count < max_count:
             current_count += 1
             Logger.debug("Found next page: %s", next_page)
             if next_page.startswith("/search/extended") or next_page.startswith("/media/series"):
                 next_page = next_page.split("&", 1)[0]
-                next_page = "%s%s&%s" % (self.baseUrlLive, next_page, query_string)
+                next_page = f"{self.baseUrlLive}{next_page}&{query_string}"
             elif not next_page.startswith("http"):
-                next_page = "%s%s&%s" % (self.baseUrlLive, next_page, query_string)
+                next_page = f"{self.baseUrlLive}{next_page}&{query_string}"
             else:
-                next_page = "%s&%s" % (next_page, query_string)
+                next_page = f"{next_page}&{query_string}"
 
             page_data = UriHandler.open(next_page, additional_headers=http_headers)
             json_data = JsonHelper(page_data)
@@ -326,11 +324,11 @@ class Channel(chn_class.Channel):
             # There are more pages
             if next_page.startswith("/search/extended") or next_page.startswith("/media/series"):
                 next_page = next_page.split("&", 1)[0]
-                next_page = "%s%s&%s" % (self.baseUrlLive, next_page, query_string)
+                next_page = f"{self.baseUrlLive}{next_page}&{query_string}"
             elif not next_page.startswith("http"):
-                next_page = "%s%s&%s" % (self.baseUrlLive, next_page, query_string)
+                next_page = f"{self.baseUrlLive}{next_page}&{query_string}"
             else:
-                next_page = "%s&%s" % (next_page, query_string)
+                next_page = f"{next_page}&{query_string}"
 
             title = LanguageHelper.get_localized_string(LanguageHelper.MorePages)
             title = "\a.: %s :." % (title,)
@@ -352,15 +350,13 @@ class Channel(chn_class.Channel):
 
         """
 
-        items = []
         search = FolderItem(
             LanguageHelper.get_localized_string(LanguageHelper.Search), "searchSite",
             content_type=contenttype.EPISODES)
         search.complete = True
         search.dontGroup = True
         search.HttpHeaders = {"X-Requested-With": "XMLHttpRequest"}
-        items.append(search)
-
+        items = [search]
         # Favorite items that require login
         favs = FolderItem(
             LanguageHelper.get_localized_string(LanguageHelper.FavouritesId),
@@ -383,21 +379,20 @@ class Channel(chn_class.Channel):
 
         extra = FolderItem(
             LanguageHelper.get_localized_string(LanguageHelper.LiveTv),
-            "%s/live" % (self.baseUrlLive,),
-            content_type=contenttype.VIDEOS)
+            f"{self.baseUrlLive}/live",
+            content_type=contenttype.VIDEOS,
+        )
+
         extra.complete = True
         extra.dontGroup = True
         items.append(extra)
 
         extra = FolderItem(
-            "{} ({})".format(
-                LanguageHelper.get_localized_string(LanguageHelper.TvShows),
-                LanguageHelper.get_localized_string(LanguageHelper.FullList)
-            ),
-            "https://start-api.npo.nl/media/series?pageSize={}&dateFrom=2014-01-01".format(self.__pageSize),
-            # "https://start-api.npo.nl/page/catalogue?pageSize={}".format(self.__pageSize),
-            content_type=contenttype.TVSHOWS
+            f"{LanguageHelper.get_localized_string(LanguageHelper.TvShows)} ({LanguageHelper.get_localized_string(LanguageHelper.FullList)})",
+            f"https://start-api.npo.nl/media/series?pageSize={self.__pageSize}&dateFrom=2014-01-01",
+            content_type=contenttype.TVSHOWS,
         )
+
         extra.complete = True
         extra.dontGroup = True
         extra.description = "Volledige programma lijst van NPO Start."
@@ -414,9 +409,11 @@ class Channel(chn_class.Channel):
         items.append(extra)
 
         extra = FolderItem(
-            "{} (A-Z)".format(LanguageHelper.get_localized_string(LanguageHelper.TvShows)),
+            f"{LanguageHelper.get_localized_string(LanguageHelper.TvShows)} (A-Z)",
             "#alphalisting",
-            content_type=contenttype.TVSHOWS)
+            content_type=contenttype.TVSHOWS,
+        )
+
         extra.complete = True
         extra.description = "Alfabetische lijst van de NPO.nl site."
         extra.dontGroup = True
@@ -444,7 +441,7 @@ class Channel(chn_class.Channel):
         items = []
         today = datetime.datetime.now() - datetime.timedelta(hours=5)
         days = LanguageHelper.get_days_list()
-        for i in range(0, 7, 1):
+        for i in range(7):
             air_date = today - datetime.timedelta(i)
             Logger.trace("Adding item for: %s", air_date)
 
@@ -521,9 +518,8 @@ class Channel(chn_class.Channel):
                 }
             }
 
-            for stream in live_streams:
+            for stream, live_data in live_streams.items():
                 Logger.debug("Adding video item to '%s' sub item list: %s", parent, stream)
-                live_data = live_streams[stream]
                 item = MediaItem(stream, live_data["url"], mediatype.VIDEO)
                 item.icon = parent.icon
                 item.thumb = live_data["thumb"]
@@ -825,11 +821,9 @@ class Channel(chn_class.Channel):
 
         except:
             Logger.debug("Cannot set date from label: %s", result_set.get("subtitle"), exc_info=True)
-            # 2016-07-05T00:00:00Z
-            date_value = result_set.get("date")
-            if date_value:
+            if date_value := result_set.get("date"):
                 time_stamp = DateHelper.get_date_from_string(date_value, "%Y-%m-%dT%H:%M:%SZ")
-                item.set_date(*time_stamp[0:6])
+                item.set_date(*time_stamp[:6])
             else:
                 Logger.warning("Cannot set date from 'data-from': %s", result_set["date"],
                                exc_info=True)
@@ -855,11 +849,10 @@ class Channel(chn_class.Channel):
             return data, items
 
         # We will just try to download all items.
-        for i in range(0, self.__max_page_count - 1):
+        for _ in range(self.__max_page_count - 1):
             page_data = UriHandler.open(next_url, additional_headers=self.parentItem.HttpHeaders)
             page_json = JsonHelper(page_data)
-            page_items = page_json.get_value("items")
-            if page_items:
+            if page_items := page_json.get_value("items"):
                 data.json["items"] += page_items
             next_url = page_json.get_value("_links", "next", "href")
             if not next_url:
@@ -899,7 +892,7 @@ class Channel(chn_class.Channel):
         """
 
         Logger.trace(result_set)
-        
+
         name = self.__get_name_for_api_video(result_set, for_epg)
         description = result_set.get('descriptionLong')
         if not description:
@@ -921,8 +914,7 @@ class Channel(chn_class.Channel):
             # item.name = "s{0:02d}e{1:02d} - {2}".format(season, episode, item.name)
 
         date_format = "%Y-%m-%dT%H:%M:%SZ"
-        date = result_set.get('broadcastDate')
-        if date:
+        if date := result_set.get('broadcastDate'):
             # The dates are in UTC, so we need to calculate the actual
             # time and take the DST in consideration for each item.
             date_time = DateHelper.get_datetime_from_string(
@@ -1025,9 +1017,7 @@ class Channel(chn_class.Channel):
 
         epg_result_set["channel"] = channel_name
         epg_result_set["broadcastDate"] = result_set.get("startsAt", epg_result_set["broadcastDate"])
-        item = self.create_api_video_item(epg_result_set, for_epg=True)
-
-        return item
+        return self.create_api_video_item(epg_result_set, for_epg=True)
 
     def create_video_item_json(self, result_set):
         """ Creates a MediaItem of type 'video' using the result_set from the regex.
@@ -1073,11 +1063,7 @@ class Channel(chn_class.Channel):
         description = result_set.get('description', description)
         video_id = data.get('whatson_id')
 
-        # try to fetch more name data
-        names = []
-        name = data.get("name", name)
-        if name:
-            names = [name, ]
+        names = [name, ] if (name := data.get("name", name)) else []
         if "series" in data and "name" in data["series"]:
             # noinspection PyTypeChecker
             names.insert(0, data["series"]["name"])
@@ -1089,8 +1075,7 @@ class Channel(chn_class.Channel):
         item.complete = False
         item.description = description
 
-        images = data.get('stills')
-        if images:
+        if images := data.get('stills'):
             # there were images in the stills
             # noinspection PyTypeChecker
             item.thumb = images[-1]['url']
@@ -1125,7 +1110,8 @@ class Channel(chn_class.Channel):
 
         Logger.trace(result_set)
 
-        url = "https://www.npostart.nl/media/collections/%s?page=1&tileMapping=normal&tileType=asset&pageType=collection" % (result_set[0],)
+        url = f"https://www.npostart.nl/media/collections/{result_set[0]}?page=1&tileMapping=normal&tileType=asset&pageType=collection"
+
         item = FolderItem(result_set[1], url, content_type=contenttype.TVSHOWS)
         item.HttpHeaders["X-Requested-With"] = "XMLHttpRequest"
         item.complete = True
@@ -1161,23 +1147,30 @@ class Channel(chn_class.Channel):
 
         now_playing = result_set[2]
         next_up = result_set[3]
-        name = "%s: %s" % (name, now_playing)
+        name = f"{name}: {now_playing}"
         if next_up:
             next_up = next_up.strip()
             next_up = next_up.replace("Straks: ", "")
             description = "Nu: %s\nStraks om %s" % (now_playing, next_up)
         else:
-            description = "Nu: %s" % (result_set[3].strip(),)
+            description = f"Nu: {result_set[3].strip()}"
 
-        item = MediaItem(name, "%s/live/%s" % (self.baseUrlLive, result_set[0]), media_type=mediatype.VIDEO)
+        item = MediaItem(
+            name,
+            f"{self.baseUrlLive}/live/{result_set[0]}",
+            media_type=mediatype.VIDEO,
+        )
+
         item.description = description
 
         if result_set[1].startswith("http"):
             item.thumb = result_set[1].replace("regular_", "").replace("larger_", "")
         elif result_set[1].startswith("//"):
-            item.thumb = "http:%s" % (result_set[1].replace("regular_", "").replace("larger_", ""),)
+            item.thumb = f'http:{result_set[1].replace("regular_", "").replace("larger_", "")}'
+
         else:
-            item.thumb = "%s%s" % (self.baseUrlLive, result_set[1].replace("regular_", "").replace("larger_", ""))
+            item.thumb = f'{self.baseUrlLive}{result_set[1].replace("regular_", "").replace("larger_", "")}'
+
 
         item.complete = False
         item.isLive = True
@@ -1221,7 +1214,7 @@ class Channel(chn_class.Channel):
             Logger.trace(stream)
             # url = stream["url"]
             # if not url.endswith("m3u8"):
-            if not stream["protocol"] == "prid":
+            if stream["protocol"] != "prid":
                 continue
             item.url = "http://e.omroep.nl/metadata/%(url)s" % stream
             item.complete = False
@@ -1331,12 +1324,7 @@ class Channel(chn_class.Channel):
             item.add_stream(mp3_urls[0], 192)
         else:
             Logger.debug("Finding the actual metadata url from %s", item.url)
-            # NPO3 normal stream had wrong subs
-            if "npo-3" in item.url and False:
-                # NPO3 has apparently switched the normal and hearing impaired streams?
-                json_urls = Regexer.do_regex('<div class="video-player-container"[^>]+data-alt-prid="([^"]+)"', html_data)
-            else:
-                json_urls = Regexer.do_regex('<npo-player[^-][^>]*media-id="([^"]+)"', html_data)
+            json_urls = Regexer.do_regex('<npo-player[^-][^>]*media-id="([^"]+)"', html_data)
 
             for episode_id in json_urls:
                 return self.__update_video_item(item, episode_id, False)
@@ -1349,8 +1337,9 @@ class Channel(chn_class.Channel):
 
     def __has_premium(self):
         if self.__has_premium_cache is None:
-            subscription_cookie = UriHandler.get_cookie("subscription", "www.npostart.nl")
-            if subscription_cookie:
+            if subscription_cookie := UriHandler.get_cookie(
+                "subscription", "www.npostart.nl"
+            ):
                 self.__has_premium_cache = subscription_cookie.value == "npoplus"
                 if self.__has_premium_cache:
                     Logger.debug("NPO Plus account, so all items can be played.")
@@ -1387,10 +1376,11 @@ class Channel(chn_class.Channel):
 
         # get the subtitle
         if fetch_subtitles:
-            sub_title_url = "https://assetscdn.npostart.nl/subtitles/original/nl/%s.vtt" % (episode_id,)
-            sub_title_path = subtitlehelper.SubtitleHelper.download_subtitle(
-                sub_title_url, episode_id + ".nl.srt", format='srt')
-            if sub_title_path:
+            sub_title_url = f"https://assetscdn.npostart.nl/subtitles/original/nl/{episode_id}.vtt"
+
+            if sub_title_path := subtitlehelper.SubtitleHelper.download_subtitle(
+                sub_title_url, f"{episode_id}.nl.srt", format='srt'
+            ):
                 item.subtitle = sub_title_path
 
         if AddonSettings.use_adaptive_stream_add_on(
@@ -1452,15 +1442,14 @@ class Channel(chn_class.Channel):
         return
 
     def __get_url_for_pom(self, pom):
-        if self.__useJson:
-            url = "https://start-api.npo.nl/media/series/{0}/episodes?pageSize={1}"\
-                .format(pom, self.__pageSize)
-            # The Franchise URL will give use seasons
-            # url = "https://start-api.npo.nl/page/franchise/{0}".format(result_set['id'])
-        else:
-            url = "https://www.npostart.nl/media/series/{0}/episodes?page=1" \
-                  "&tileMapping=dedicated&tileType=asset&pageType=franchise".format(pom)
-        return url
+        return (
+            "https://start-api.npo.nl/media/series/{0}/episodes?pageSize={1}".format(
+                pom, self.__pageSize
+            )
+            if self.__useJson
+            else "https://www.npostart.nl/media/series/{0}/episodes?page=1"
+            "&tileMapping=dedicated&tileType=asset&pageType=franchise".format(pom)
+        )
 
     def __determine_date_time_for_npo_item(self, item, date_time, date_premium):
         """
@@ -1561,19 +1550,15 @@ class Channel(chn_class.Channel):
         episode_title = result_set["episodeTitle"]
         if for_epg:
             channel = result_set["channel"]
-            name = "{} - {}".format(channel, show_title)
+            name = f"{channel} - {show_title}"
             if episode_title and show_title != episode_title:
-                name = "{} - {}".format(name, episode_title)
+                name = f"{name} - {episode_title}"
         else:
             name = episode_title
             if not bool(name):
                 name = result_set.get('franchiseTitle')
 
-            # In some cases the title of the show (not episode) is different from the franchise
-            # title. In that case we want to add the title of the show in front of the name, but
-            # only if that does not lead to duplication
-            elif show_title != result_set.get('franchiseTitle') \
-                    and show_title != name:
-                name = "{} - {}".format(show_title, name)
+            elif show_title not in [result_set.get('franchiseTitle'), name]:
+                name = f"{show_title} - {name}"
 
         return name

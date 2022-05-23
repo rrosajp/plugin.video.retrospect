@@ -41,15 +41,12 @@ class Pickler:
 
     def __init__(self, pickle_store_path=None):
         # store some vars for speed optimization
-        self.__pickle_container = dict()  # : storage for pickled items to prevent duplicate pickling
-        self.__depickle_container = dict()  # : storage for depickled items.
+        self.__pickle_container = {}
+        self.__depickle_container = {}
 
         self.__pickle_store_path = pickle_store_path
         self.__compress = True
-        if self.__compress:
-            self.__ext = "store.z"
-        else:
-            self.__ext = "store"
+        self.__ext = "store.z" if self.__compress else "store"
 
     def de_pickle_child_items(self, hex_string):
         """ De-serializes a serialized mediaitem.
@@ -94,11 +91,10 @@ class Pickler:
                             Pickler.__Base64CharsDecode.keys(),
                             hex_string)
 
-        Logger.trace("DePickle: HexString: %s (might be truncated)", hex_string[0:256])
+        Logger.trace("DePickle: HexString: %s (might be truncated)", hex_string[:256])
 
         pickle_string = base64.b64decode(hex_string)  # type: bytes
-        pickle_item = pickle.loads(pickle_string)  # type: object
-        return pickle_item
+        return pickle.loads(pickle_string)
 
     def pickle_media_item(self, item):
         """ Serialises a mediaitem using Pickle
@@ -146,7 +142,9 @@ class Pickler:
         import time
 
         pickles_path = os.path.join(
-            self.__pickle_store_path, "pickles", "*", "*", "*.{}".format(self.__ext))
+            self.__pickle_store_path, "pickles", "*", "*", f"*.{self.__ext}"
+        )
+
 
         cache_time = age * 30 * 24 * 60 * 60
         for filename in glob.glob(pickles_path):
@@ -242,16 +240,17 @@ class Pickler:
         store_guid, item_guid = storage_location.split(Pickler.__store_separator)
         items = self.__retrieve_media_items_from_store(store_guid)
 
-        item_pickle = items.get(item_guid)
-        return item_pickle
+        return items.get(item_guid)
 
     def __get_pickle_path(self, store_guid):
         # file storage is always lower case
         store_guid = store_guid.lower()
-        pickles_file = "{}.{}".format(store_guid, self.__ext)
+        pickles_file = f"{store_guid}.{self.__ext}"
 
         pickles_dir = os.path.join(
-            self.__pickle_store_path, "pickles", store_guid[0:2], store_guid[2:4])
+            self.__pickle_store_path, "pickles", store_guid[:2], store_guid[2:4]
+        )
+
         pickles_path = os.path.join(pickles_dir, pickles_file)
         return pickles_dir, pickles_path
 
@@ -284,7 +283,7 @@ class Pickler:
             return favourite_pickle_stores
 
         # Start of the add-on url
-        addon_url = "plugin://{}".format(addon_id)
+        addon_url = f"plugin://{addon_id}"
 
         for fav in favourites:
             fav_name = fav.get("title", "")
@@ -294,7 +293,9 @@ class Pickler:
 
             # Is it a favourite with a PickleStore ID?
             pickle_store_id = Regexer.do_regex(
-                r"pickle=([^&]+){}[^&]+".format(Pickler.__store_separator), fav_path)
+                f"pickle=([^&]+){Pickler.__store_separator}[^&]+", fav_path
+            )
+
             if not pickle_store_id:
                 continue
 

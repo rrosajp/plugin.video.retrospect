@@ -45,13 +45,9 @@ class Smil(object):
         results = Regexer.do_regex(regex, self.data)
         if len(results) > 0:
             return results[0]
-        else:
-            regex = r'<meta name="httpBase" content="([^"]+)"\W*/>'
-            results = Regexer.do_regex(regex, self.data)
-            if len(results) > 0:
-                return results[0]
-            else:            
-                return ""
+        regex = r'<meta name="httpBase" content="([^"]+)"\W*/>'
+        results = Regexer.do_regex(regex, self.data)
+        return results[0] if len(results) > 0 else ""
     
     def get_best_video(self):
         """ Returns a list of video's with the highest quality.
@@ -86,10 +82,7 @@ class Smil(object):
         
         regex = '<video src="([^"]+)"[^>]+system-bitrate="([^"]+)"'
         results = Regexer.do_regex(regex, self.data)
-        if len(results) > 0:
-            return results
-        else:
-            return None
+        return results if len(results) > 0 else None
     
     def get_subtitle(self):
         """ Retrieves the URL of the included subtitle
@@ -101,13 +94,13 @@ class Smil(object):
         
         regex = r'<param\W*name="subtitle"[^>]*value="([^"]+)'
         urls = Regexer.do_regex(regex, self.data)
-        
+
         for url in urls:
             if "http:" in url:            
                 return url
             else:
-                return "%s/%s" % (self.get_base_url().rstrip("/"), url.lstrip("/"))
-        
+                return f'{self.get_base_url().rstrip("/")}/{url.lstrip("/")}'
+
         return ""
     
     def strip_type_start(self, url):

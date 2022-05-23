@@ -209,14 +209,15 @@ class LanguageHelper(object):
         :rtype: list[str]
         :return: A list of strings
         """
-        days = [LanguageHelper.get_localized_string(LanguageHelper.Monday),
-                LanguageHelper.get_localized_string(LanguageHelper.Tuesday),
-                LanguageHelper.get_localized_string(LanguageHelper.Wednesday),
-                LanguageHelper.get_localized_string(LanguageHelper.Thursday),
-                LanguageHelper.get_localized_string(LanguageHelper.Friday),
-                LanguageHelper.get_localized_string(LanguageHelper.Saturday),
-                LanguageHelper.get_localized_string(LanguageHelper.Sunday)]
-        return days
+        return [
+            LanguageHelper.get_localized_string(LanguageHelper.Monday),
+            LanguageHelper.get_localized_string(LanguageHelper.Tuesday),
+            LanguageHelper.get_localized_string(LanguageHelper.Wednesday),
+            LanguageHelper.get_localized_string(LanguageHelper.Thursday),
+            LanguageHelper.get_localized_string(LanguageHelper.Friday),
+            LanguageHelper.get_localized_string(LanguageHelper.Saturday),
+            LanguageHelper.get_localized_string(LanguageHelper.Sunday),
+        ]
 
     @staticmethod
     def get_localized_string(string_id, split_on_pipes=True, replace_pipes=False):

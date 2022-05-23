@@ -156,19 +156,20 @@ class Channel(chn_class.Channel):
         items = []
 
         live = LanguageHelper.get_localized_string(LanguageHelper.LiveStreamTitleId)
-        live_tv = "{} - TV".format(live)
-        live_radio = "{} - Radio".format(live)
+        live_tv = f"{live} - TV"
+        live_radio = f"{live} - Radio"
 
         links = {
-            live_tv: "https://psapi.nrk.no/tv/live?apiKey={}".format(self.__api_key),
-            live_radio: "https://psapi.nrk.no/radio/live?apiKey={}".format(self.__api_key),
-            "Recommended": "https://psapi.nrk.no/medium/tv/recommendedprograms?maxnumber=100&startRow=0&apiKey={}".format(self.__api_key),
-            "Popular": "https://psapi.nrk.no/medium/tv/popularprograms/week?maxnumber=100&startRow=0&apiKey={}".format(self.__api_key),
-            "Recent": "https://psapi.nrk.no/medium/tv/recentlysentprograms?maxnumber=100&startRow=0&apiKey={}".format(self.__api_key),
-            "Categories": "http://psapi-granitt-prod-we.cloudapp.net/medium/tv/categories?apiKey={}".format(self.__api_key),
-            "A - Å": "https://psapi.nrk.no/medium/tv/letters?apiKey={}".format(self.__api_key),
-            "S&oslash;k": "#searchSite"
+            live_tv: f"https://psapi.nrk.no/tv/live?apiKey={self.__api_key}",
+            live_radio: f"https://psapi.nrk.no/radio/live?apiKey={self.__api_key}",
+            "Recommended": f"https://psapi.nrk.no/medium/tv/recommendedprograms?maxnumber=100&startRow=0&apiKey={self.__api_key}",
+            "Popular": f"https://psapi.nrk.no/medium/tv/popularprograms/week?maxnumber=100&startRow=0&apiKey={self.__api_key}",
+            "Recent": f"https://psapi.nrk.no/medium/tv/recentlysentprograms?maxnumber=100&startRow=0&apiKey={self.__api_key}",
+            "Categories": f"http://psapi-granitt-prod-we.cloudapp.net/medium/tv/categories?apiKey={self.__api_key}",
+            "A - Å": f"https://psapi.nrk.no/medium/tv/letters?apiKey={self.__api_key}",
+            "S&oslash;k": "#searchSite",
         }
+
         for name, url in links.items():
             item = MediaItem(name, url)
             item.complete = True
@@ -195,7 +196,7 @@ class Channel(chn_class.Channel):
 
         """
 
-        url = "https://psapi-ne.nrk.no/autocomplete?q=%s&apiKey={}".format(self.__api_key)
+        url = f"https://psapi-ne.nrk.no/autocomplete?q=%s&apiKey={self.__api_key}"
         return chn_class.Channel.search_site(self, url)
 
     def create_alpha_item(self, result_set):
@@ -221,12 +222,11 @@ class Channel(chn_class.Channel):
         url_part = title.lower()
         if url_part == "0-9":
             url_part = "$"
-        url = "https://psapi.nrk.no/medium/tv/letters/{}/indexelements?onlyOnDemandRights=false&" \
-              "apiKey={}".format(url_part, self.__api_key)
+        url = f"https://psapi.nrk.no/medium/tv/letters/{url_part}/indexelements?onlyOnDemandRights=false&apiKey={self.__api_key}"
+
 
         title = LanguageHelper.get_localized_string(LanguageHelper.StartWith) % (title, )
-        item = MediaItem(title, url)
-        return item
+        return MediaItem(title, url)
 
     def create_category_item(self, result_set):
         """ Creates a MediaItem of type 'folder' for a category using the result_set from the regex.
@@ -244,8 +244,8 @@ class Channel(chn_class.Channel):
 
         title = result_set["displayValue"]
         category_id = result_set["id"]
-        url = "http://psapi-granitt-prod-we.cloudapp.net/medium/tv/categories/{}/indexelements?apiKey={}"\
-            .format(category_id, self.__api_key)
+        url = f"http://psapi-granitt-prod-we.cloudapp.net/medium/tv/categories/{category_id}/indexelements?apiKey={self.__api_key}"
+
         item = MediaItem(title, url)
         item.thumb = self.__category_thumbs.get(category_id.lower(), self.noImage)
         return item
@@ -372,9 +372,10 @@ class Channel(chn_class.Channel):
         else:
             use_old_series_api = False
             if use_old_series_api:
-                url = "https://psapi.nrk.no/series/{}?apiKey={}".format(item_id, self.__api_key)
+                url = f"https://psapi.nrk.no/series/{item_id}?apiKey={self.__api_key}"
             else:
-                url = "https://psapi.nrk.no/tv/catalog/series/{}?apiKey={}".format(item_id, self.__api_key)
+                url = f"https://psapi.nrk.no/tv/catalog/series/{item_id}?apiKey={self.__api_key}"
+
 
             item = MediaItem(title, url)
 
@@ -413,15 +414,14 @@ class Channel(chn_class.Channel):
 
         """
 
-        title = "Sesong {}".format(result_set["name"])
+        title = f'Sesong {result_set["name"]}'
         season_id = result_set["id"]
         if not result_set.get("hasOnDemandRightsEpisodes", True):
             return None
 
         parent_url, qs = self.parentItem.url.split("?", 1)
-        url = "{}/seasons/{}/episodes?apiKey={}".format(parent_url, season_id, self.__api_key)
-        item = MediaItem(title, url)
-        return item
+        url = f"{parent_url}/seasons/{season_id}/episodes?apiKey={self.__api_key}"
+        return MediaItem(title, url)
 
     def create_series_video_item(self, result_set):
         """ Creates a MediaItem of type 'video' using the result_set from the regex.
@@ -443,8 +443,7 @@ class Channel(chn_class.Channel):
         """
 
         title = result_set["title"]
-        sub_title = result_set.get("episodeTitle", None)
-        if sub_title:
+        if sub_title := result_set.get("episodeTitle", None):
             title = "{} - {}".format(title, sub_title)
 
         if not result_set["usageRights"].get("hasRightsNow", True):
@@ -487,12 +486,11 @@ class Channel(chn_class.Channel):
         title = result_set["title"]
         season_id = result_set["name"]
         if title != season_id:
-            title = "{} - {}".format(season_id, title)
+            title = f"{season_id} - {title}"
 
-        url = "{}{}?apiKey={}".format(self.baseUrl, result_set["href"], self.__api_key)
+        url = f'{self.baseUrl}{result_set["href"]}?apiKey={self.__api_key}'
 
-        item = MediaItem(title, url)
-        return item
+        return MediaItem(title, url)
 
     def create_instalment_video_item(self, result_set):
         """ Creates a MediaItem of type 'video' using the result_set from the regex.
@@ -539,7 +537,7 @@ class Channel(chn_class.Channel):
             # noinspection PyTypeChecker
             date_value = result_set["usageRights"]["from"]["date"].split("+")[0]
             time_stamp = DateHelper.get_date_from_string(date_value, date_format="%Y-%m-%dT%H:%M:%S")
-            item.set_date(*time_stamp[0:6])
+            item.set_date(*time_stamp[:6])
 
         return item
 
@@ -563,7 +561,8 @@ class Channel(chn_class.Channel):
         """
 
         # noinspection PyTypeChecker
-        url = "{}{}?apiKey={}".format(self.baseUrl, result_set["_links"]["manifest"]["href"], self.__api_key)
+        url = f'{self.baseUrl}{result_set["_links"]["manifest"]["href"]}?apiKey={self.__api_key}'
+
 
         live_data = result_set["_embedded"]["playback"]  # type: dict
         item = MediaItem(live_data["title"], url)
@@ -651,8 +650,7 @@ class Channel(chn_class.Channel):
         for sub in stream_data["subtitles"]:
             sub_url = None
             sub_type = sub["type"]
-            default_sub = sub["defaultOn"]
-            if default_sub:
+            if default_sub := sub["defaultOn"]:
                 sub_url = sub["webVtt"]
                 sub_type = "webvtt"  # set Retrospect type
 
@@ -673,7 +671,7 @@ class Channel(chn_class.Channel):
 
         # Old URL:
         # return "https://psapi.nrk.no/programs/{}?apiKey={}".format(video_id, self.__api_key)
-        return "https://psapi.nrk.no/playback/manifest/program/{}?eea-portability=true".format(video_id)
+        return f"https://psapi.nrk.no/playback/manifest/program/{video_id}?eea-portability=true"
 
     def __update_live_audio(self, item, manifest):
         video_info = manifest.get_value("playable", "assets", 0)
@@ -690,9 +688,7 @@ class Channel(chn_class.Channel):
     def __update_live_video(self, item, manifest):
         video_info = manifest.get_value("playable", "assets", 0)
         url = video_info["url"]
-        encrypted = video_info["encrypted"]
-
-        if encrypted:
+        if encrypted := video_info["encrypted"]:
             use_adaptive = AddonSettings.use_adaptive_stream_add_on(with_encryption=True)
             if not use_adaptive:
                 Logger.error("Cannot playback encrypted item without inputstream.adaptive with encryption support")
@@ -701,16 +697,16 @@ class Channel(chn_class.Channel):
             key = M3u8.get_license_key("", key_type="R")
             M3u8.set_input_stream_addon_input(stream, license_key=key)
             item.complete = True
+        elif use_adaptive := AddonSettings.use_adaptive_stream_add_on(
+            with_encryption=False
+        ):
+            stream = item.add_stream(url, 0)
+            M3u8.set_input_stream_addon_input(stream)
+            item.complete = True
         else:
-            use_adaptive = AddonSettings.use_adaptive_stream_add_on(with_encryption=False)
-            if use_adaptive:
-                stream = item.add_stream(url, 0)
-                M3u8.set_input_stream_addon_input(stream)
+            for s, b in M3u8.get_streams_from_m3u8(url):
                 item.complete = True
-            else:
-                for s, b in M3u8.get_streams_from_m3u8(url):
-                    item.complete = True
-                    item.add_stream(s, b)
+                item.add_stream(s, b)
 
         return item
 

@@ -22,5 +22,4 @@ class ContextMenuItem:
     def __str__(self):
         """Returns the string representation of the contextmenu item"""
 
-        return "%s (%s), Types:%s" % (
-            self.label, self.functionName, self.itemTypes)
+        return f"{self.label} ({self.functionName}), Types:{self.itemTypes}"

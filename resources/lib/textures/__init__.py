@@ -65,7 +65,7 @@ class TextureHandler:
             from . import resourceaddon
             TextureHandler.__TextureHandler = resourceaddon.Resources(config.textureResource, logger)
         else:
-            raise Exception("Invalide mode: %s" % (mode,))
+            raise Exception(f"Invalide mode: {mode}")
 
         return TextureHandler.__TextureHandler
 

@@ -69,15 +69,13 @@ class HtmlEntityHelper(object):
             # noinspection PyUnresolvedReferences
             return urllib.parse.quote(url)
 
-        # noinspection PyUnresolvedReferences
-        if isinstance(url, unicode):
-            Logger.trace("Unicode url: %s", url)
-            # noinspection PyUnresolvedReferences
-            return urllib.quote(url.encode())
-        else:
+        if not isinstance(url, unicode):
             # this is the main time waster
             # noinspection PyUnresolvedReferences
             return urllib.quote(url)
+        Logger.trace("Unicode url: %s", url)
+        # noinspection PyUnresolvedReferences
+        return urllib.quote(url.encode())
 
     @staticmethod
     def url_decode(url):
@@ -90,12 +88,7 @@ class HtmlEntityHelper(object):
 
         """
 
-        if PY2:
-            # noinspection PyUnresolvedReferences
-            return urllib.unquote(url)
-
-        # noinspection PyUnresolvedReferences
-        return urllib.parse.unquote(url)
+        return urllib.unquote(url) if PY2 else urllib.parse.unquote(url)
 
     @staticmethod
     def __convert_html_entities(html):
@@ -142,4 +135,4 @@ class HtmlEntityHelper(object):
                 return unichr(htmldefs.name2codepoint[entity.group(2)])
         except:
             Logger.error("Error converting HTMLEntities: &%s%s", entity.group(1), entity.group(2), exc_info=True)
-            return '&%s%s;' % (entity.group(1), entity.group(2))
+            return f'&{entity.group(1)}{entity.group(2)};'

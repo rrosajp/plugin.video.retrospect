@@ -129,7 +129,7 @@ class Channel(chn_class.Channel):
             self.baseUrl = "http://www.dplay.dk/api/v2/ajax"
 
         else:
-            raise NotImplementedError("ChannelCode %s is not implemented" % (self.channelCode, ))
+            raise NotImplementedError(f"ChannelCode {self.channelCode} is not implemented")
 
         if self.primaryChannelId:
             self.recentUrl = "https://{0}/content/videos?decorators=viewingHistory&" \
@@ -257,7 +257,7 @@ class Channel(chn_class.Channel):
         # extract the images
         self.__update_image_lookup(json)
 
-        for p in range(2, pages + 1, 1):
+        for p in range(2, pages + 1):
             url = url_format.format(p)
             Logger.debug("Loading: %s", url)
 
@@ -327,7 +327,7 @@ class Channel(chn_class.Channel):
         video_info = result_set["attributes"]  # type: dict
         if "newestEpisodePublishStart" in video_info:
             date = video_info["newestEpisodePublishStart"]
-            date_part, time_part = date[0:-3].split("T")
+            date_part, time_part = date[:-3].split("T")
             year, month, day = date_part.split("-")
             item.set_date(year, month, day)
 
@@ -367,7 +367,7 @@ class Channel(chn_class.Channel):
                 page = int(page_part)
                 url_format = "{0}&page%5Bnumber%5D={{0:d}}".format(base_url)
             else:
-                page = int(page_part[0:next_part])
+                page = int(page_part[:next_part])
                 url_format = "{0}&page%5Bnumber%5D={{0:d}}&{1}".format(base_url, page_part[next_part:])
 
         max_pages = result_set.get("totalPages", 0)
@@ -378,8 +378,7 @@ class Channel(chn_class.Channel):
 
         title = LanguageHelper.get_localized_string(LanguageHelper.MorePages)
         url = url_format.format(page + 1)
-        item = MediaItem(title, url)
-        return item
+        return MediaItem(title, url)
 
     def search_site(self, url=None):
         """ Creates an list of items by searching the site.
@@ -421,8 +420,7 @@ class Channel(chn_class.Channel):
                          "page%%5Bsize%%5D={1}&query=%s" \
                 .format(self.baseUrlApi, self.videoPageSize)
 
-        needle = XbmcWrapper.show_key_board()
-        if needle:
+        if needle := XbmcWrapper.show_key_board():
             Logger.debug("Searching for '%s'", needle)
             needle = HtmlEntityHelper.url_encode(needle)
 
@@ -491,8 +489,8 @@ class Channel(chn_class.Channel):
             date = video_info.get("airDate", video_info["publishStart"])
             # 2018-03-20T20:00:00Z
             air_date = DateHelper.get_date_from_string(date,  date_format="%Y-%m-%dT%H:%M:%SZ")
-            item.set_date(*air_date[0:6])
-            if datetime.datetime(*air_date[0:6]) > datetime.datetime.now():
+            item.set_date(*air_date[:6])
+            if datetime.datetime(*air_date[:6]) > datetime.datetime.now():
                 item.isPaid = True
 
         episode = video_info.get("episodeNumber", 0)
@@ -502,8 +500,12 @@ class Channel(chn_class.Channel):
             item.set_season_info(season, episode)
 
         if include_show_title:
-            show_id = result_set["relationships"].get("show", {}).get("data", {}).get("id")
-            if show_id:
+            if (
+                show_id := result_set["relationships"]
+                .get("show", {})
+                .get("data", {})
+                .get("id")
+            ):
                 show = self.showLookup[show_id]
                 item.name = "{0} - {1}".format(show, item.name)
 
@@ -574,8 +576,8 @@ class Channel(chn_class.Channel):
         user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " \
                      "(KHTML, like Gecko) Chrome/81.0.4044.129 Safari/537.36"
         device_id = AddonSettings.get_client_id().replace("-", "")
-        window_id = "{}|{}".format(
-            binascii.hexlify(os.urandom(16)).decode(), binascii.hexlify(os.urandom(16)).decode())
+        window_id = f"{binascii.hexlify(os.urandom(16)).decode()}|{binascii.hexlify(os.urandom(16)).decode()}"
+
 
         fe = ["DNT:unknown", "L:en-US", "D:24", "PR:1", "S:1920,975", "AS:1920,935", "TO:-120",
               "SS:true", "LS:true", "IDB:true", "B:false", "ODB:true", "CPUC:unknown",
@@ -596,8 +598,7 @@ class Channel(chn_class.Channel):
         ]
         data_value = JsonHelper.dump(data)
 
-        stamp = now - (now % (60 * 60 * 6))
-        key_password = "{}{}".format(user_agent, stamp)
+        key_password = f"{user_agent}{now - now % (60 * 60 * 6)}"
 
         salt_bytes = os.urandom(8)
         key_iv = self.__evp_kdf(key_password.encode(), salt_bytes, key_size=8, iv_size=4,
@@ -628,12 +629,13 @@ class Channel(chn_class.Channel):
             "userbrowser": user_agent,
             "simulate_rate_limit": "0",
             "simulated": "0",
-            "rnd": "{}".format(random.random())
+            "rnd": f"{random.random()}",
         }
+
 
         req_data = ""
         for k, v in req_dict.items():
-            req_data = "{}{}={}&".format(req_data, k, HtmlEntityHelper.url_encode(v))
+            req_data = f"{req_data}{k}={HtmlEntityHelper.url_encode(v)}&"
         req_data = req_data.rstrip("&")
 
         arkose_data = UriHandler.open(
@@ -648,9 +650,10 @@ class Channel(chn_class.Channel):
         Logger.debug("Succesfully required a login token from Arkose.")
 
         UriHandler.open(
-            "https://disco-api.dplay.se/token?realm=dplayse&deviceId={}&shortlived=true".format(device_id),
-            no_cache=True
+            f"https://disco-api.dplay.se/token?realm=dplayse&deviceId={device_id}&shortlived=true",
+            no_cache=True,
         )
+
 
         if username is None or password is None:
             from resources.lib.vault import Vault
@@ -854,13 +857,13 @@ class Channel(chn_class.Channel):
         # hardcoded for now as it does not seem top matter
         dscgeo = '{"countryCode":"%s","expiry":1446917369986}' % (self.language.upper(),)
         dscgeo = HtmlEntityHelper.url_encode(dscgeo)
-        headers = {"Cookie": "dsc-geo=%s" % (dscgeo, )}
+        headers = {"Cookie": f"dsc-geo={dscgeo}"}
 
         # send the data
         http, nothing, host, other = self.baseUrl.split("/", 3)
         subdomain, domain = host.split(".", 1)
-        url = "https://secure.%s/secure/api/v2/user/authorization/stream/%s?stream_type=hls" \
-              % (domain, video_id,)
+        url = f"https://secure.{domain}/secure/api/v2/user/authorization/stream/{video_id}?stream_type=hls"
+
         data = UriHandler.open(url, additional_headers=headers, no_cache=True)
         json = JsonHelper(data)
         url = json.get_value("hls")
@@ -869,10 +872,7 @@ class Channel(chn_class.Channel):
             return False
 
         streams_found = False
-        if "?" in url:
-            qs = url.split("?")[-1]
-        else:
-            qs = None
+        qs = url.split("?")[-1] if "?" in url else None
         for s, b in M3u8.get_streams_from_m3u8(url):
             # and we need to append the original QueryString
             if "X-I-FRAME-STREAM" in s:
@@ -880,11 +880,7 @@ class Channel(chn_class.Channel):
 
             streams_found = True
             if qs is not None:
-                if "?" in s:
-                    s = "%s&%s" % (s, qs)
-                else:
-                    s = "%s?%s" % (s, qs)
-
+                s = f"{s}&{qs}" if "?" in s else f"{s}?{qs}"
             item.add_stream(s, b)
 
         return streams_found
@@ -964,11 +960,14 @@ class Channel(chn_class.Channel):
                 block = hasher.digest()
                 hasher = hashlib.new(hash_algorithm)
 
-            derived_bytes += block[0: min(len(block), (target_key_size - number_of_derived_words) * 4)]
+            derived_bytes += block[
+                : min(len(block), (target_key_size - number_of_derived_words) * 4)
+            ]
+
 
             number_of_derived_words += len(block)/4
 
         return {
-            "key": derived_bytes[0: key_size * 4],
-            "iv": derived_bytes[key_size * 4:]
+            "key": derived_bytes[: key_size * 4],
+            "iv": derived_bytes[key_size * 4 :],
         }

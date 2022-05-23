@@ -37,17 +37,15 @@ class Authenticator(object):
         """
 
         res = self.__hander.active_authentication()
-        logged_on_user = res.username
+        if logged_on_user := res.username:
+            if logged_on_user != username:
+                Logger.warning("Existing but different authenticated user (%s) found. Logging of first.",
+                               self.__safe_log(logged_on_user))
+                self.__hander.log_off(logged_on_user)
 
-        # Check if the existing log in is the same as the requested one.
-        if logged_on_user and logged_on_user != username:
-            Logger.warning("Existing but different authenticated user (%s) found. Logging of first.",
-                           self.__safe_log(logged_on_user))
-            self.__hander.log_off(logged_on_user)
-
-        elif logged_on_user and logged_on_user == username:
-            Logger.warning("Existing authenticated user (%s) found.", self.__safe_log(logged_on_user))
-            return res
+            else:
+                Logger.warning("Existing authenticated user (%s) found.", self.__safe_log(logged_on_user))
+                return res
 
         if not username:
             Logger.warning("No username specified")
@@ -103,11 +101,10 @@ class Authenticator(object):
 
         logged_on_user = res.username
         if logged_on_user is not None and (force or logged_on_user == username):
-            res = self.__hander.log_off(logged_on_user)
-            if res:
+            if res := self.__hander.log_off(logged_on_user):
                 Logger.debug("Logged off successfully")
             else:
                 Logger.error("Log off failed")
 
     def __safe_log(self, text):
-        return "".join([text[i] if i % 2 == 0 else "*" for i in range(0, len(text))])
+        return "".join([text[i] if i % 2 == 0 else "*" for i in range(len(text))])

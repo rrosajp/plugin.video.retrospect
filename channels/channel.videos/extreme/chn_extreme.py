@@ -60,7 +60,7 @@ class Channel(chn_class.Channel):
 
         """
 
-        item = MediaItem(result_set[1], "%s%s?page=1" % (self.baseUrl, result_set[0]))
+        item = MediaItem(result_set[1], f"{self.baseUrl}{result_set[0]}?page=1")
         item.complete = True
         return item
 
@@ -87,16 +87,13 @@ class Channel(chn_class.Channel):
         """
 
         Logger.debug('Starting update_video_item for %s (%s)', item.name, self.channelName)
-        
+
         # get additional info
         data = UriHandler.open(item.url)
 
-        #<param name="flashvars" value="id=dj0xMDEzNzQyJmM9MTAwMDAwNA&amp;tags=source%253Dfreecaster&amp;autoplay=1" />
-        # http://freecaster.tv/player/smil/dj0xMDEzNzQyJmM9MTAwMDAwNA -> playlist with bitrate
-        # http://freecaster.tv/player/smil/dj0xMDEzNzQyJmM9MTAwMDAwNA -> info (not needed, get description from main page.
-
-        you_tube_url = Regexer.do_regex('"(https://www.youtube.com/embed/[^\"]+)', data)
-        if you_tube_url:
+        if you_tube_url := Regexer.do_regex(
+            '"(https://www.youtube.com/embed/[^\"]+)', data
+        ):
             Logger.debug("Using Youtube video")
             you_tube_url = you_tube_url[0].replace("embed/", "watch?v=")
             for s, b in YouTube.get_streams_from_you_tube(you_tube_url):
@@ -108,7 +105,7 @@ class Channel(chn_class.Channel):
             r'<meta property="og:video" content="http://player.extreme.com/FCPlayer.swf\?id=([^&]+)&amp[^"]+" />',
             data)
         if len(guid) > 0:
-            url = '%s/player/smil/%s' % (self.baseUrl, guid[0],) 
+            url = f'{self.baseUrl}/player/smil/{guid[0]}'
             data = UriHandler.open(url)
 
             smiller = Smil(data)
@@ -121,7 +118,7 @@ class Channel(chn_class.Channel):
                         item.complete = True
                         item.add_stream(s, b)
                 else:
-                    item.add_stream("%s%s" % (base_url, url[0]), bitrate=int(url[1]) // 1000)
+                    item.add_stream(f"{base_url}{url[0]}", bitrate=int(url[1]) // 1000)
                 item.complete = True
 
             Logger.trace("update_video_item complete: %s", item)

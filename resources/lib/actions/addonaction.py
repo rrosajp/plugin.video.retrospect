@@ -50,13 +50,10 @@ class AddonAction(object):
 
         """
 
-        context_menu_items = []
-
         # Generic, none-Python menu items that would normally cause an unwanted reload of the
         # Python interpreter instance within Kodi.
         refresh = LanguageHelper.get_localized_string(LanguageHelper.RefreshListId)
-        context_menu_items.append((refresh, 'Container.Refresh()'))
-
+        context_menu_items = [(refresh, 'Container.Refresh()')]
         if item is None:
             return context_menu_items
 
@@ -71,17 +68,9 @@ class AddonAction(object):
         for menu_item in channel.contextMenuItems:
             # Logger.Debug(menu_item)
             if menu_item.itemTypes is None or item.media_type in menu_item.itemTypes:
-                # We don't care for complete here!
-                # if menu_item.completeStatus == None or menu_item.completeStatus == item.complete:
-
-                # see if the method is available
-                method_available = False
-
-                for method in possible_methods:
-                    if method == menu_item.functionName:
-                        method_available = True
-                        # break from the method loop
-                        break
+                method_available = any(
+                    method == menu_item.functionName for method in possible_methods
+                )
 
                 if not method_available:
                     Logger.warning("No method for: %s", menu_item)
@@ -90,8 +79,8 @@ class AddonAction(object):
                 cmd_url = self.parameter_parser.create_action_url(
                     channel, action=menu_item.functionName, item=item)
 
-                cmd = "RunPlugin(%s)" % (cmd_url,)
-                title = "Retro: %s" % (menu_item.label,)
+                cmd = f"RunPlugin({cmd_url})"
+                title = f"Retro: {menu_item.label}"
                 Logger.trace("Adding command: %s | %s", title, cmd)
                 context_menu_items.append((title, cmd))
 

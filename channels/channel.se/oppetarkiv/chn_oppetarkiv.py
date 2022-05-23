@@ -38,7 +38,8 @@ class Channel(chn_class.Channel):
         # setup the urls
         self.mainListUri = "https://www.oppetarkiv.se/kategori/titel"
         self.baseUrl = "https://www.oppetarkiv.se"
-        self.swfUrl = "%s/public/swf/svtplayer-9017918b040e054d1e3c902fc13ceb5d.swf" % (self.baseUrl,)
+        self.swfUrl = f"{self.baseUrl}/public/swf/svtplayer-9017918b040e054d1e3c902fc13ceb5d.swf"
+
 
         # setup the main parsing data
         self.episodeItemRegex = r'<li[^>]+data-genre="([^"]*)"[^>]+class="svtoa[^>]*>\W*<a[^>]+' \
@@ -150,7 +151,7 @@ class Channel(chn_class.Channel):
         """
 
         item = chn_class.Channel.create_page_item(self, result_set)
-        item.url = "%s&embed=true" % (item.url,)
+        item.url = f"{item.url}&embed=true"
         return item
 
     def create_episode_item(self, result_set):
@@ -179,10 +180,10 @@ class Channel(chn_class.Channel):
             url = HtmlEntityHelper.convert_html_entities(url)
 
         if not url.startswith("http:"):
-            url = "%s%s" % (self.baseUrl, url)
+            url = f"{self.baseUrl}{url}"
 
         # get the ajax page for less bandwidth
-        url = "%s?sida=1&amp;sort=tid_stigande&embed=true" % (url, )
+        url = f"{url}?sida=1&amp;sort=tid_stigande&embed=true"
 
         item = MediaItem(result_set[2], url)
         item.complete = True
@@ -212,19 +213,18 @@ class Channel(chn_class.Channel):
 
         thumb_url = result_set[0]
         if thumb_url.startswith("//"):
-            thumb_url = "http:%s" % (thumb_url, )
+            thumb_url = f"http:{thumb_url}"
         elif not thumb_url.startswith("http"):
-            thumb_url = "%s%s" % (self.baseUrl, thumb_url)
+            thumb_url = f"{self.baseUrl}{thumb_url}"
         Logger.trace(thumb_url)
 
-        season = result_set[1]
-        if season:
-            name = "%s - %s" % (season, result_set[2])
+        if season := result_set[1]:
+            name = f"{season} - {result_set[2]}"
         else:
             name = result_set[2]
 
         video_id = result_set[4]
-        url = "http://www.oppetarkiv.se/video/%s?output=json" % (video_id,)
+        url = f"http://www.oppetarkiv.se/video/{video_id}?output=json"
         item = MediaItem(name, url)
         item.thumb = thumb_url
 
@@ -271,9 +271,7 @@ class Channel(chn_class.Channel):
 
         data = UriHandler.open(item.url)
         json = JsonHelper(data, Logger.instance())
-        video_data = json.get_value("video")
-        if video_data:
-
+        if video_data := json.get_value("video"):
             # Get the videos
             video_infos = video_data.get("videoReferences")
             # Similar to SVT
@@ -315,7 +313,7 @@ class Channel(chn_class.Channel):
             if subtitles and subtitles[0]["url"]:
                 Logger.trace(subtitles)
                 sub_url = subtitles[0]["url"]
-                file_name = "%s.srt" % (EncodingHelper.encode_md5(sub_url),)
+                file_name = f"{EncodingHelper.encode_md5(sub_url)}.srt"
                 sub_data = UriHandler.open(sub_url)
 
                 # correct the subs

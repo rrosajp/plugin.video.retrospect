@@ -95,7 +95,7 @@ class Channel(chn_class.Channel):
 
         data, items = self.add_live_channel(data)
 
-        for i in range(0, 20):
+        for i in range(20):
             url = self.apiFormat.format(i)
             data = UriHandler.open(url)
             json_data = JsonHelper(data)
@@ -134,14 +134,11 @@ class Channel(chn_class.Channel):
         """
 
         Logger.info("Performing Pre-Processing")
-        items = []
-
         title = LanguageHelper.get_localized_string(LanguageHelper.LiveStreamTitleId)
         item = MediaItem("\a.: {} :.".format(title), "")
         now = datetime.datetime.now()
         item.set_date(now.year, now.month, now.day, 23, 59, 58)
-        items.append(item)
-
+        items = [item]
         live_item = MediaItem(title, "#livestream")
         live_item.media_type = mediatype.EPISODE
         live_item.isLive = True
@@ -171,7 +168,7 @@ class Channel(chn_class.Channel):
             # older items don't have videos for now
             return None
 
-        url = "{}/api/article/{}".format(self.baseUrl, result_set["externalId"])
+        url = f'{self.baseUrl}/api/article/{result_set["externalId"]}'
         item = MediaItem(result_set["title"], url)
         item.description = HtmlHelper.to_text(result_set.get("text"))
 
@@ -221,8 +218,7 @@ class Channel(chn_class.Channel):
         for image in image_data:
             thumb = image.get("imageHigh", image["image"])
 
-        video_info = result_set.get("video")
-        if video_info:
+        if video_info := result_set.get("video"):
             url = video_info["externalId"]
         else:
             return None

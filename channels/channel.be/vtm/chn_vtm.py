@@ -81,7 +81,7 @@ class Channel(chn_class.Channel):
         """
 
         # dummy class
-        item = MediaItem(result_set[1], "%s/%s" % (self.baseUrl, result_set[0]))
+        item = MediaItem(result_set[1], f"{self.baseUrl}/{result_set[0]}")
         item.complete = True
         if "/het-weer" in item.url:
             item.media_type = mediatype.EPISODE
@@ -108,7 +108,7 @@ class Channel(chn_class.Channel):
         """
 
         title = result_set["Title"]
-        url = "%s%s" % (self.baseUrl, result_set["Url"])
+        url = f'{self.baseUrl}{result_set["Url"]}'
 
         item = MediaItem(title, url)
         item.media_type = mediatype.EPISODE

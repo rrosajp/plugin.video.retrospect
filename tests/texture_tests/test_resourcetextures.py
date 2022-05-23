@@ -58,7 +58,7 @@ class TestResourceTextures(unittest.TestCase):
 
     def test_resource_texture_file_resource(self):
         texture = self._get_texture_handler()
-        texture_path = "resource://{}/{}".format(Config.textureResource, "3large.png")
+        texture_path = f"resource://{Config.textureResource}/3large.png"
         url = texture._get_texture_uri(self.channel_path, texture_path)
         self.assertEqual(texture_path, url)
 

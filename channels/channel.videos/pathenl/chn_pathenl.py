@@ -75,7 +75,7 @@ class Channel(chn_class.Channel):
                                   r'[\w\W]{0,1500}?<table class="table-schedule">([\w\W]{0,5000}?)</table>'
             self.mediaUrlRegex = 'file: "(http[^"]+)'
         else:
-            raise NotImplementedError("Code %s is not implemented" % (self.channelCode,))
+            raise NotImplementedError(f"Code {self.channelCode} is not implemented")
 
         # ============== Actual channel setup STARTS here and should be overwritten from derived classes ===============
         self.noImage = "patheimage.png"
@@ -133,7 +133,10 @@ class Channel(chn_class.Channel):
         cinema.thumb = result_set["image"].replace("nocropthumb/[format]/", "")
         cinema.complete = True
 
-        now_playing_url = "%s/cinemas/%s/movies/nowplaying" % (self.baseUrl, result_set["id"])
+        now_playing_url = (
+            f'{self.baseUrl}/cinemas/{result_set["id"]}/movies/nowplaying'
+        )
+
         now_playing = MediaItem("Trailers", now_playing_url)
         # https://www.pathe.nl/nocropthumb/[format]/gfx_content/bioscoop/foto/pathe.nl_380x218px_amersfoort.jpg
         now_playing.complete = True
@@ -142,11 +145,14 @@ class Channel(chn_class.Channel):
         cinema.items.append(now_playing)
 
         now = datetime.datetime.now()
-        for i in range(0, 10):
+        for i in range(10):
             date = now + datetime.timedelta(days=i)
             title = "%s-%02d-%02d" % (date.year, date.month, date.day)
-            schedule_url = "%s/cinemas/%s/schedules?date=%s" % (self.baseUrl, result_set["id"], title)
-            schedule = MediaItem("Agenda: %s" % (title,), schedule_url)
+            schedule_url = (
+                f'{self.baseUrl}/cinemas/{result_set["id"]}/schedules?date={title}'
+            )
+
+            schedule = MediaItem(f"Agenda: {title}", schedule_url)
             schedule.complete = True
             schedule.thumb = cinema.thumb
             schedule.HttpHeaders = self.httpHeaders
@@ -169,7 +175,7 @@ class Channel(chn_class.Channel):
 
         Logger.trace(result_set)
         movie_id = result_set['id']
-        url = "%s/movies/%s" % (self.baseUrl, movie_id)
+        url = f"{self.baseUrl}/movies/{movie_id}"
         item = MediaItem(result_set["name"], url)
         item.poster = result_set["thumb"]
         if item.poster:
@@ -188,19 +194,19 @@ class Channel(chn_class.Channel):
                 start = s['start']
                 day, start = start.split("T")
                 hour, minute, ignore = start.split(":", 2)
-                start = "%s:%s" % (hour, minute)
+                start = f"{hour}:{minute}"
 
                 end = s['end']
                 ignore, end = end.split("T")
                 hour, minute, ignore = end.split(":", 2)
-                end = "%s:%s" % (hour, minute)
+                end = f"{hour}:{minute}"
 
-                schedule = "%s%s-%s, " % (schedule, start, end)
+                schedule = f"{schedule}{start}-{end}, "
             item.description = "%s\n\n%s: %s" % (item.description, day, schedule.strip(', '))
 
         item.description = "%s\n\n%s" % (item.description, result_set.get('teaser', ""))
         if not item.description.endswith('.'):
-            item.description = "%s." % (item.description, )
+            item.description = f"{item.description}."
 
         if "releaseDate" in result_set:
             release_date = result_set["releaseDate"].split("T")[0]
@@ -309,7 +315,7 @@ class Channel(chn_class.Channel):
         if self.parentItem.url.endswith(str(DateHelper.this_year())):
             return None
 
-        url = "%s%s" % (self.baseUrl, result_set[3])
+        url = f"{self.baseUrl}{result_set[3]}"
         name = result_set[4]
 
         item = MediaItem(name.title(), url)
@@ -349,11 +355,11 @@ class Channel(chn_class.Channel):
             return None
 
         name = result_set[1]
-        url = "%s%s" % (self.baseUrl, result_set[0])
+        url = f"{self.baseUrl}{result_set[0]}"
 
         thumb_url = result_set[2]
         if not thumb_url.startswith("http"):
-            thumb_url = "%s%s" % (self.baseUrl, thumb_url)
+            thumb_url = f"{self.baseUrl}{thumb_url}"
         # https://www.pathe.nl/gfx_content/posters/clubvansinterklaas3p1.jpg
         # https://www.pathe.nl/nocropthumb/180x254/gfx_content/posters/clubvansinterklaas3p1.jpg
         thumb_url = thumb_url.replace("nocropthumb/180x254/", "")
@@ -364,7 +370,7 @@ class Channel(chn_class.Channel):
         # more description stuff
         # description = "%s\n\n" % (result_set[4],)
         description = ""
-        
+
         time_table = result_set[3]
         time_table_regex = \
             r'<ul>\W+<li><b>([^<]+)</b></li>\W+<li>\w+ (\d+:\d+)</li>\W+<li>\w+ (\d+:\d+)</li>'
@@ -374,17 +380,17 @@ class Channel(chn_class.Channel):
 
             bios = time_table_entry[0]
             if not bios_set:
-                description = "%s%s: " % (description, bios)
+                description = f"{description}{bios}: "
                 bios_set = True
 
             start_time = time_table_entry[1]
             end_time = time_table_entry[2]
-            description = "%s%s-%s, " % (description, start_time, end_time)
+            description = f"{description}{start_time}-{end_time}, "
 
         description = description.strip(', ')
         item.description = description.strip()
-        
-        item.complete = False        
+
+        item.complete = False
         return item
     
     def update_video_item(self, item):
@@ -410,17 +416,18 @@ class Channel(chn_class.Channel):
         """
 
         Logger.debug('Starting update_video_item for %s (%s)', item.name, self.channelName)
-        
+
         data = UriHandler.open(item.url)
         videos = Regexer.do_regex(self.mediaUrlRegex, data)
 
-        fanart = Regexer.do_regex(r'<div class="visual-image">\W+<img src="([^"]+)"', data)
-        if fanart:
+        if fanart := Regexer.do_regex(
+            r'<div class="visual-image">\W+<img src="([^"]+)"', data
+        ):
             item.fanart = fanart[0]
 
         for video in videos:
             Logger.trace(video)
             item.add_stream(video)
-        
+
         item.complete = True
         return item

@@ -154,7 +154,6 @@ class Channel(chn_class.Channel):
 
         """
 
-        items = []
         title = "\a .: {} :.".format(LanguageHelper.get_localized_string(LanguageHelper.Recent))
         recent = FolderItem(
             title, "#recent",
@@ -162,7 +161,7 @@ class Channel(chn_class.Channel):
         recent.complete = True
         recent.dontGroup = True
 
-        items.append(recent)
+        items = [recent]
         return data, items
 
     def add_recent_items(self, data):
@@ -186,7 +185,7 @@ class Channel(chn_class.Channel):
         items = []
         today = datetime.datetime.now() - datetime.timedelta(hours=5)
         days = LanguageHelper.get_days_list()
-        for i in range(0, 7, 1):
+        for i in range(7):
             air_date = today - datetime.timedelta(i)
             day_after = air_date + datetime.timedelta(days=1)
             Logger.trace("Adding item for: %s", air_date)
@@ -247,7 +246,7 @@ class Channel(chn_class.Channel):
         base = result_set["_links"]["page"]["href"]
         slug = result_set["_links"]["web"]["slug"]
         origin = result_set["_links"]["web"]["originId"]
-        url = "{}{}?slug={}&origin={}".format(self.baseUrl, base, slug, origin)
+        url = f"{self.baseUrl}{base}?slug={slug}&origin={origin}"
 
         item = FolderItem(title, url, content_type=contenttype.EPISODES, media_type=mediatype.TVSHOW)
         item.description = desc
@@ -257,8 +256,7 @@ class Channel(chn_class.Channel):
         return item
 
     def create_epg_item(self, result_set):
-        item = self.create_video_item(result_set, epg_item=True)
-        return item
+        return self.create_video_item(result_set, epg_item=True)
 
     def create_video_item(self, result_set, epg_item=False):
         """ Creates a MediaItem of type 'video' using the result_set from the regex.
@@ -288,7 +286,7 @@ class Channel(chn_class.Channel):
 
         program_title = result_set["programTitle"]
         episode_title = result_set["episodeTitle"]
-        url = "{}{}".format(self.baseUrl, result_set["_links"]["page"]["href"])
+        url = f'{self.baseUrl}{result_set["_links"]["page"]["href"]}'
 
         item = MediaItem(episode_title or program_title, url, media_type=mediatype.EPISODE)
         item.description = result_set.get("synopsis")
@@ -341,11 +339,14 @@ class Channel(chn_class.Channel):
         data = UriHandler.open(item.url, additional_headers=item.HttpHeaders)
         # extract the source_id:
         json_data = JsonHelper(data)
-        source_id = None
-        for c in json_data.get_value("components"):
-            if c["type"] == "tv-detail-header":
-                source_id = c["sourceId"]
-                break
+        source_id = next(
+            (
+                c["sourceId"]
+                for c in json_data.get_value("components")
+                if c["type"] == "tv-detail-header"
+            ),
+            None,
+        )
 
         if not source_id:
             Logger.error("Unable to extract source_id")
@@ -363,7 +364,7 @@ class Channel(chn_class.Channel):
         for clip in clip_data:
             video_url = clip["src"]
             if not video_url.startswith("http"):
-                video_url = "{}{}".format(base_url, video_url)
+                video_url = f"{base_url}{video_url}"
 
             bitrate = clip["bandwidth"] or "0"
             if bitrate.lower() == "auto":

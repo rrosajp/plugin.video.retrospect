@@ -46,10 +46,11 @@ class Local(TextureHandler):
 
         """
 
-        if not uri:
-            return True
-
-        return not uri.startswith("http://") and not uri.startswith("https://")
+        return (
+            not uri.startswith("http://") and not uri.startswith("https://")
+            if uri
+            else True
+        )
 
     def _purge_texture_cache(self, channel_path):
         """ Removes those entries from the textures cache that are no longer required.
