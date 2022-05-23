@@ -37,10 +37,10 @@ class TestSbsSeChannel(ChannelTest):
 
         # Do the work
         timestamp = 1589151277
-        timestamp = timestamp - (timestamp % (60*60*6))
+        timestamp -= timestamp % (60*60*6)
         self.assertEqual(timestamp_expected, timestamp)
 
-        key_str = "{}{}".format(user_agent, timestamp)
+        key_str = f"{user_agent}{timestamp}"
         key_iv = self.channel._Channel__evp_kdf(
             key_str.encode(), salt_bytes, key_size=8, iv_size=4, iterations=1, hash_algorithm="md5")
 
@@ -73,10 +73,10 @@ class TestSbsSeChannel(ChannelTest):
 
         # Do the work
         timestamp = 1589061893
-        timestamp = timestamp - (timestamp % (60*60*6))
+        timestamp -= timestamp % (60*60*6)
         self.assertEqual(timestamp_expected, timestamp)
 
-        key_str = "{}{}".format(user_agent, timestamp)
+        key_str = f"{user_agent}{timestamp}"
         key_iv = self.channel._Channel__evp_kdf(
             key_str.encode(), salt_bytes, key_size=8, iv_size=4, iterations=1, hash_algorithm="md5")
 
@@ -168,8 +168,8 @@ class TestSbsSeChannel(ChannelTest):
         user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " \
                      "(KHTML, like Gecko) Chrome/81.0.4044.129 Safari/537.36"
         device_id = binascii.hexlify(os.urandom(16)).decode()
-        window_id = "{}|{}".format(
-            binascii.hexlify(os.urandom(16)).decode(), binascii.hexlify(os.urandom(16)).decode())
+        window_id = f"{binascii.hexlify(os.urandom(16)).decode()}|{binascii.hexlify(os.urandom(16)).decode()}"
+
 
         now = int(time.time())
         b64_now = binascii.b2a_base64(str(now).encode()).decode().strip()
@@ -202,8 +202,7 @@ class TestSbsSeChannel(ChannelTest):
         data_value = json.dumps(data)
         print(data_value)
 
-        stamp = now - (now % (60*60*6))
-        password = "{}{}".format(user_agent, stamp)
+        password = f"{user_agent}{now - now % (60*60*6)}"
         print(password)
 
         salt_bytes = os.urandom(8)
@@ -239,13 +238,14 @@ class TestSbsSeChannel(ChannelTest):
             "userbrowser": user_agent,
             "simulate_rate_limit": "0",
             "simulated": "0",
-            "rnd": "{}".format(random.random())
+            "rnd": f"{random.random()}",
         }
+
 
         req_data = ""
         for k, v in req_dict.items():
             print(k, v)
-            req_data = "{}{}={}&".format(req_data, k, HtmlEntityHelper.url_encode(v))
+            req_data = f"{req_data}{k}={HtmlEntityHelper.url_encode(v)}&"
         req_data = req_data.rstrip("&")
 
         import requests
@@ -262,7 +262,10 @@ class TestSbsSeChannel(ChannelTest):
         arkose_token = arkose_json["token"]
         self.assertTrue("rid=" in arkose_token, "Invalid Arkose Token")
 
-        data = s.get("https://disco-api.dplay.se/token?realm=dplayse&deviceId={}&shortlived=true".format(device_id))
+        data = s.get(
+            f"https://disco-api.dplay.se/token?realm=dplayse&deviceId={device_id}&shortlived=true"
+        )
+
         api_json = data.json()
         api_token = api_json["data"]["attributes"]["token"]
         print(api_token)

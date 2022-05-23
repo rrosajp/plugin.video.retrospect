@@ -10,8 +10,9 @@ def install_widevine():
     # AdaptiveStream Helper add-on in a single Python scripts. Doing it barefoot then.
     add_on = xbmcaddon.Addon(sys.argv[1])
     msg_box = xbmcgui.Dialog()
-    ok = msg_box.yesno(add_on.getLocalizedString(30532), add_on.getLocalizedString(30533))
-    if ok:
+    if ok := msg_box.yesno(
+        add_on.getLocalizedString(30532), add_on.getLocalizedString(30533)
+    ):
         try:
             import inputstreamhelper
             is_helper = inputstreamhelper.Helper('mpd', drm='com.widevine.alpha')

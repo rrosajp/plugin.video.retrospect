@@ -27,7 +27,7 @@ class RtlXlHandler(AuthenticationHandler):
         super(RtlXlHandler, self).__init__(realm, device_id=None)
 
         self.api_key = api_key
-        self.__setting_signature = "{}:signature".format(realm)
+        self.__setting_signature = f"{realm}:signature"
 
         # internal data
         self.__signature = None
@@ -37,8 +37,9 @@ class RtlXlHandler(AuthenticationHandler):
             "APIKey": self.api_key,
             "authMode": "cookie"
         }
-        self.__common_params = \
-            "APIKey={}&authMode=cookie".format(HtmlEntityHelper.url_encode(self.api_key))
+        self.__common_params = (
+            f"APIKey={HtmlEntityHelper.url_encode(self.api_key)}&authMode=cookie"
+        )
 
         # rtl_cookie_consent=2.0.0; rtlcslistversion=39.0.0;
         # UriHandler.set_cookie(name="rtl_cookie_consent", value="2.0.0")
@@ -59,12 +60,8 @@ class RtlXlHandler(AuthenticationHandler):
         context_id = int(random.random() * 8999999999) + 1000000000
 
         # then we do an initial bootstrap call, which retrieves the `gmid` and `ucid` cookies
-        url = "https://sso.rtl.nl/accounts.webSdkBootstrap" \
-              "?apiKey={}" \
-              "&pageURL=https%3A%2F%2Fwww.rtlxl.nl%2F" \
-              "&format=json" \
-              "&callback=gigya.callback" \
-              "&context=R{}".format(self.api_key, context_id)
+        url = f"https://sso.rtl.nl/accounts.webSdkBootstrap?apiKey={self.api_key}&pageURL=https%3A%2F%2Fwww.rtlxl.nl%2F&format=json&callback=gigya.callback&context=R{context_id}"
+
         init_login = UriHandler.open(url, no_cache=True)
         init_data = JsonHelper(init_login)
         if init_data.get_value("statusCode") != 200:
@@ -78,16 +75,14 @@ class RtlXlHandler(AuthenticationHandler):
         login_data = {
             "loginID": username,
             "password": password,
-            # "include": "profile,data",
-            # "includeUserInfo": "true",
             "pageURL": "https://www.rtlxl.nl/profiel",
             "format": "json",
-            # "callback": "gigya.callback",
-            "context": "R{}".format(context_id),
+            "context": f"R{context_id}",
             "targetEnv": "jssdk",
-            "sessionExpiration": 7776000
+            "sessionExpiration": 7776000,
         }
-        login_data.update(self.__common_param_dict)
+
+        login_data |= self.__common_param_dict
         login_response = UriHandler.open(login_url, data=login_data, no_cache=True)
 
         # Process the result
@@ -110,8 +105,8 @@ class RtlXlHandler(AuthenticationHandler):
                 login_cookie is not None and \
                 not login_cookie.is_expired():
             # only retrieve the account information using the cookie and the token
-            account_info_url = "https://sso.rtl.nl/accounts.getAccountInfo?{}" \
-                               "&login_token={}".format(self.__common_params, login_token)
+            account_info_url = f"https://sso.rtl.nl/accounts.getAccountInfo?{self.__common_params}&login_token={login_token}"
+
             account_info = UriHandler.open(account_info_url, no_cache=True)
 
             # See if it was successful
@@ -131,8 +126,7 @@ class RtlXlHandler(AuthenticationHandler):
 
         token_data = UriHandler.open("https://api.rtl.nl/rtlxl/token/api/2/token", no_cache=True)
         token_json = JsonHelper(token_data)
-        token = token_json.get_value("accessToken")
-        return token
+        return token_json.get_value("accessToken")
 
     def log_off(self, username):
         """ Check if the user with the given name is currently authenticated.
@@ -168,8 +162,9 @@ class RtlXlHandler(AuthenticationHandler):
 
         user_name = logon_json.get("profile", {}).get("email") or None
 
-        signature_setting = logon_json.get("sessionInfo", {}).get("login_token")
-        if signature_setting:
+        if signature_setting := logon_json.get("sessionInfo", {}).get(
+            "login_token"
+        ):
             Logger.info("Found 'login_token'. Saving it.")
             AddonSettings.set_setting(self.__setting_signature, signature_setting.split("|")[0],
                                       store=LOCAL)

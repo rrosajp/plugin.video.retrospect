@@ -100,10 +100,10 @@ class Vault(object):
             return False
 
         if PY2:
-            encrypted_key = "%s=%s" % (self.__APPLICATION_KEY_SETTING, application_key)
+            encrypted_key = f"{self.__APPLICATION_KEY_SETTING}={application_key}"
         else:
             # make it text to store
-            encrypted_key = "%s=%s" % (self.__APPLICATION_KEY_SETTING, application_key.decode())
+            encrypted_key = f"{self.__APPLICATION_KEY_SETTING}={application_key.decode()}"
 
         # let's generate a pin using the scrypt password-based key derivation
         pin_key = self.__get_pbk(pin)
@@ -144,7 +144,7 @@ class Vault(object):
         :rtype: str
         """
 
-        full_setting_id = "channel_%s_%s" % (channel_guid, setting_id)
+        full_setting_id = f"channel_{channel_guid}_{setting_id}"
         return self.get_setting(full_setting_id)
 
     def get_setting(self, setting_id):
@@ -202,11 +202,11 @@ class Vault(object):
             Logger.debug("Setting of encrypted value cancelled.")
             return
 
-        value = "%s=%s" % (setting_id, input_value)
+        value = f"{setting_id}={input_value}"
         encrypted_value = self.__encrypt(value, Vault.__Key)
 
         if setting_action_id is None:
-            setting_action_id = "%s_set" % (setting_id,)
+            setting_action_id = f"{setting_id}_set"
 
         Logger.debug("Updating '%s' and '%s'", setting_id, setting_action_id)
         AddonSettings.set_setting(setting_id, encrypted_value)
@@ -228,9 +228,9 @@ class Vault(object):
         """
 
         if not force:
-            vault_shown = AddonSettings.store(LOCAL).get_boolean_setting(
-                Vault.__VAULT_HOWTO_SETTING, default=False)
-            if vault_shown:
+            if vault_shown := AddonSettings.store(LOCAL).get_boolean_setting(
+                Vault.__VAULT_HOWTO_SETTING, default=False
+            ):
                 return False
 
         XbmcWrapper.show_text(LanguageHelper.VaultHowToTitle, LanguageHelper.VaultHowToText)

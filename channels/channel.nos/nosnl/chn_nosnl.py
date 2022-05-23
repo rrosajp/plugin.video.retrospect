@@ -164,7 +164,7 @@ class Channel(chn_class.Channel):
         # category = result_set["maincategory"].title()
         # subcategory = result_set["subcategory"].title()
 
-        url = "https://api.nos.nl/mobile/video/%s/phone.json" % (video_id, )
+        url = f"https://api.nos.nl/mobile/video/{video_id}/phone.json"
         item = MediaItem(result_set['title'], url, media_type=mediatype.VIDEO)
         item.description = result_set["description"]
         item.complete = False
@@ -175,17 +175,16 @@ class Channel(chn_class.Channel):
 
         if "image" in result_set:
             images = result_set["image"]["formats"]
-            matched_image = images[-1]
-            for image in images:
-                if image["width"] >= 720:
-                    matched_image = image
-                    break
+            matched_image = next(
+                (image for image in images if image["width"] >= 720), images[-1]
+            )
+
             item.thumb = list(matched_image["url"].values())[0]
 
         # set the date and time
         date = result_set.get("start_at", result_set["published_at"])
         time_stamp = DateHelper.get_date_from_string(date, date_format="%Y-%m-%dT%H:%M:%S+{0}".format(date[-4:]))
-        item.set_date(*time_stamp[0:6])
+        item.set_date(*time_stamp[:6])
 
         if "stream" in result_set:
             item.url = result_set["stream"]
@@ -301,9 +300,6 @@ class Channel(chn_class.Channel):
 
         Logger.info("Performing Post-Processing")
 
-        filtered_items = {}
-        for i in reversed(items):
-            filtered_items[i.url] = i
-
+        filtered_items = {i.url: i for i in reversed(items)}
         Logger.debug("Post-Processing finished")
-        return [i for i in filtered_items.values()]
+        return list(filtered_items.values())

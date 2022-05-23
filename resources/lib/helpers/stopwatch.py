@@ -59,12 +59,8 @@ class StopWatch(object):
         
         """
         now = time.time()
-        
-        if self.lapTime:
-            delta = now - self.lapTime
-        else:
-            delta = now - self.startTime
-        
+
+        delta = now - self.lapTime if self.lapTime else now - self.startTime
         self.lapTime = now
         seconds_taken = self.lapTime - self.startTime
         self.logger.debug("Stopwatch :: Lap (%s) %s: elapsed since start: %s ms (delta +%s ms)",
@@ -73,4 +69,4 @@ class StopWatch(object):
     def __str__(self):
         """String representation of this class."""
         
-        return "Stopwatch: [%s]" % (self.name, )
+        return f"Stopwatch: [{self.name}]"

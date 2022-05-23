@@ -83,15 +83,15 @@ class MediaItem:
         self.isPaid = False                       # : if set to True, the item is a Paid item and cannot be played (*)
         self.season = 0                           # : The season number
         self.episode = 0                          # : The episode number
-        self.__infoLabels = dict()                # : Additional Kodi InfoLabels
+        self.__infoLabels = {}
 
         self.complete = False
         self.items = []
-        self.HttpHeaders = dict()                 # : http headers for the item data retrieval
+        self.HttpHeaders = {}
 
         # Items that are not essential for pickled
         self.isCloaked = False
-        self.metaData = dict()                    # : Additional data that is for internal / routing use only
+        self.metaData = {}
 
         # Kodi media types: video, movie, tvshow, season, episode or musicvideo, music, song, album, artist
         self.media_type = media_type
@@ -110,11 +110,12 @@ class MediaItem:
         # GUID used for identification of the object. Do not set from script, MD5 needed
         # to prevent UTF8 issues
         try:
-            self.guid = "%s%s" % (EncodingHelper.encode_md5(title), EncodingHelper.encode_md5(url or ""))
+            self.guid = f'{EncodingHelper.encode_md5(title)}{EncodingHelper.encode_md5((url or ""))}'
+
         except:
             Logger.error("Error setting GUID for title:'%s' and url:'%s'. Falling back to UUID", title, url, exc_info=True)
             self.guid = self.__get_uuid()
-        self.guidValue = int("0x%s" % (self.guid,), 0)
+        self.guidValue = int(f"0x{self.guid}", 0)
 
     def add_stream(self, url, bitrate=0, subtitle=None):
         """ Appends a single stream to  this MediaItem.
@@ -379,7 +380,7 @@ class MediaItem:
 
         try:
             date_format = "%Y-%m-%d"     # "%x"
-            date_time_format = date_format + " %H:%M"
+            date_time_format = f"{date_format} %H:%M"
 
             if hour is None and minutes is None and seconds is None:
                 time_stamp = datetime(int(year), int(month), int(day))
@@ -392,11 +393,7 @@ class MediaItem:
                 return
 
             self.__timestamp = time_stamp
-            if text is None:
-                self.__date = date
-            else:
-                self.__date = text
-
+            self.__date = date if text is None else text
         except ValueError:
             Logger.error("Error setting date: Year=%s, Month=%s, Day=%s, Hour=%s, Minutes=%s, Seconds=%s", year, month, day, hour, minutes, seconds, exc_info=True)
             self.__timestamp = datetime.min
@@ -429,7 +426,7 @@ class MediaItem:
         name_post_fix, description_pre_fix = self.__update_title_and_description_with_limitations()
 
         name = self.__get_title(name)
-        name = "%s %s" % (name, name_post_fix)
+        name = f"{name} {name_post_fix}"
         name = self.__full_decode_text(name)
 
         if self.description is None:
@@ -533,13 +530,8 @@ class MediaItem:
             Logger.trace("Adding property: %s", prop)
             kodi_item.setProperty(prop[0], prop[1])
 
-        # TODO: Apparently if we use the InputStream Adaptive, using the setSubtitles() causes sync issues.
-        if self.subtitle and False:
-            Logger.debug("Adding subtitle to ListItem: %s", self.subtitle)
-            kodi_item.setSubtitles([self.subtitle, ])
-
         # Set any custom Header
-        header_params = dict()
+        header_params = {}
 
         # set proxy information if present
         self.__set_kodi_proxy_info(kodi_item, stream, stream.Url, header_params, proxy)
@@ -551,10 +543,14 @@ class MediaItem:
         stream_url = stream.Url
         if header_params:
             kodi_query_string = reduce(
-                lambda x, y: "%s&%s=%s" % (x, y, header_params[y]), header_params.keys(), "")
+                lambda x, y: f"{x}&{y}={header_params[y]}",
+                header_params.keys(),
+                "",
+            )
+
             kodi_query_string = kodi_query_string.lstrip("&")
             Logger.debug("Adding Kodi Stream parameters: %s\n%s", header_params, kodi_query_string)
-            stream_url = "%s|%s" % (stream.Url, kodi_query_string)
+            stream_url = f"{stream.Url}|{kodi_query_string}"
 
         Logger.info("Playing Stream: %s", stream)
         return kodi_item, stream_url
@@ -636,20 +632,19 @@ class MediaItem:
             Logger.debug("Not adding DNS proxy for Kodi streams")
         elif not proxy.use_proxy_for_url(stream_url):
             Logger.debug("Not adding proxy due to filter mismatch")
+        elif AddonSettings.is_min_version(AddonSettings.KodiKrypton):
+            # See ffmpeg proxy in https://github.com/xbmc/xbmc/commit/60b21973060488febfdc562a415e11cb23eb9764
+            kodi_item.setProperty("proxy.host", proxy.Proxy)
+            kodi_item.setProperty("proxy.port", str(proxy.Port))
+            kodi_item.setProperty("proxy.type", proxy.Scheme)
+            if proxy.Username:
+                kodi_item.setProperty("proxy.user", proxy.Username)
+            if proxy.Password:
+                kodi_item.setProperty("proxy.password", proxy.Password)
+            Logger.debug("Adding (Krypton) %s", proxy)
         else:
-            if AddonSettings.is_min_version(AddonSettings.KodiKrypton):
-                # See ffmpeg proxy in https://github.com/xbmc/xbmc/commit/60b21973060488febfdc562a415e11cb23eb9764
-                kodi_item.setProperty("proxy.host", proxy.Proxy)
-                kodi_item.setProperty("proxy.port", str(proxy.Port))
-                kodi_item.setProperty("proxy.type", proxy.Scheme)
-                if proxy.Username:
-                    kodi_item.setProperty("proxy.user", proxy.Username)
-                if proxy.Password:
-                    kodi_item.setProperty("proxy.password", proxy.Password)
-                Logger.debug("Adding (Krypton) %s", proxy)
-            else:
-                kodi_params["HttpProxy"] = proxy.get_proxy_address()
-                Logger.debug("Adding (Pre-Krypton) %s", proxy)
+            kodi_params["HttpProxy"] = proxy.get_proxy_address()
+            Logger.debug("Adding (Pre-Krypton) %s", proxy)
         return
 
     def __get_uuid(self):
@@ -693,19 +688,17 @@ class MediaItem:
 
         if self.is_playable:
             if len(self.streams) > 0:
-                value = "MediaItem: %s [Type=%s, Complete=%s, IsLive=%s, Date=%s, Geo/DRM=%s/%s]" % \
-                        (value, self.media_type, self.complete, self.isLive, self.__date,
-                         self.isGeoLocked, self.isDrmProtected)
+                value = f"MediaItem: {value} [Type={self.media_type}, Complete={self.complete}, IsLive={self.isLive}, Date={self.__date}, Geo/DRM={self.isGeoLocked}/{self.isDrmProtected}]"
+
                 for media_stream in self.streams:
                     value = "%s\n%s" % (value, media_stream)
-                value = "%s" % (value,)
+                value = f"{value}"
             else:
-                value = "%s [Type=%s, Complete=%s, unknown urls, IsLive=%s, Date=%s, Geo/DRM=%s/%s]" \
-                        % (value, self.media_type, self.complete, self.isLive, self.__date,
-                           self.isGeoLocked, self.isDrmProtected)
+                value = f"{value} [Type={self.media_type}, Complete={self.complete}, unknown urls, IsLive={self.isLive}, Date={self.__date}, Geo/DRM={self.isGeoLocked}/{self.isDrmProtected}]"
+
         else:
-            value = "%s [Type=%s, Url=%s, Date=%s, IsLive=%s, Geo/DRM=%s/%s]" \
-                    % (value, self.media_type, self.url, self.__date, self.isLive, self.isGeoLocked, self.isDrmProtected)
+            value = f"{value} [Type={self.media_type}, Url={self.url}, Date={self.__date}, IsLive={self.isLive}, Geo/DRM={self.isGeoLocked}/{self.isDrmProtected}]"
+
 
         if self.subtitle:
             value = "%s\n + Subtitle: %s" % (value, self.subtitle)
@@ -752,10 +745,7 @@ class MediaItem:
 
         """
 
-        if not other:
-            return False
-
-        return self.guidValue == other.guidValue
+        return self.guidValue == other.guidValue if other else False
 
     def __update_title_and_description_with_limitations(self):
         """ Updates the title/name and description with the symbols for DRM, GEO and Paid.
@@ -846,17 +836,17 @@ class MediaItem:
 
         if self.media_type == mediatype.PAGE:
             # We need to add the Page prefix to the item
-            name = "%s %s" % (LanguageHelper.get_localized_string(LanguageHelper.Page), name)
+            name = f"{LanguageHelper.get_localized_string(LanguageHelper.Page)} {name}"
             Logger.debug("MediaItem.__get_title :: Adding Page Prefix")
 
         elif self.__date != '' and not self.is_playable \
                 and not AddonSettings.is_min_version(AddonSettings.KodiLeia):
             # not playable items should always show date
-            name = "%s [COLOR=dimgray](%s)[/COLOR]" % (name, self.__date)
+            name = f"{name} [COLOR=dimgray]({self.__date})[/COLOR]"
 
         folder_prefix = AddonSettings.get_folder_prefix()
-        if self.media_type in mediatype.FOLDER_TYPES and not folder_prefix == "":
-            name = "%s %s" % (folder_prefix, name)
+        if self.media_type in mediatype.FOLDER_TYPES and folder_prefix != "":
+            name = f"{folder_prefix} {name}"
 
         return name
 
@@ -945,7 +935,7 @@ class MediaStream:
         self.Bitrate = int(bitrate)
         self.Properties = []
         self.Adaptive = False
-        self.HttpHeaders = dict()  # :  HTTP Headers for stream playback
+        self.HttpHeaders = {}
 
         for prop in args:
             self.add_property(prop[0], prop[1])
@@ -982,10 +972,7 @@ class MediaStream:
         """
 
         # also check for URL
-        if other is None:
-            return False
-
-        return self.Url == other.Url
+        return False if other is None else self.Url == other.Url
 
     def __str__(self):
         """ String representation
@@ -995,7 +982,7 @@ class MediaStream:
 
         """
 
-        text = "MediaStream: %s [bitrate=%s]" % (self.Url, self.Bitrate)
+        text = f"MediaStream: {self.Url} [bitrate={self.Bitrate}]"
         for prop in self.Properties:
             text = "%s\n    + Property: %s=%s" % (text, prop[0], prop[1])
 

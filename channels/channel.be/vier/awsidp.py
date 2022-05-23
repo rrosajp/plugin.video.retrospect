@@ -31,7 +31,7 @@ class AwsIdp:
 
         self.client_id = client_id
         self.region = self.pool_id.split("_")[0]
-        self.url = "https://cognito-idp.%s.amazonaws.com/" % (self.region, )
+        self.url = f"https://cognito-idp.{self.region}.amazonaws.com/"
         self.__logger = logger
 
         # Initialize the values
@@ -59,7 +59,7 @@ class AwsIdp:
 
         self.big_n = self.__hex_to_long(self.n_hex)
         self.g = self.__hex_to_long(self.g_hex)
-        self.k = self.__hex_to_long(self.__hex_hash('00' + self.n_hex + '0' + self.g_hex))
+        self.k = self.__hex_to_long(self.__hex_hash(f'00{self.n_hex}0{self.g_hex}'))
         self.small_a_value = self.__generate_random_small_a()
         self.large_a_value = self.__calculate_a()
         if self.__logger:
@@ -82,7 +82,7 @@ class AwsIdp:
             self.__logger.trace(challenge_parameters)
 
         challenge_name = auth_response_json.get_value("ChallengeName")
-        if not challenge_name == "PASSWORD_VERIFIER":
+        if challenge_name != "PASSWORD_VERIFIER":
             message = auth_response_json.get_value("message")
             if self.__logger:
                 self.__logger.error("Cannot start authentication challenge: %s", message or None)
@@ -133,8 +133,7 @@ class AwsIdp:
         refresh_response = UriHandler.open(self.url, params=refresh_request_data,
                                            additional_headers=refresh_headers)
         refresh_json = JsonHelper(refresh_response)
-        id_token = refresh_json.get_value("AuthenticationResult", "IdToken")
-        return id_token
+        return refresh_json.get_value("AuthenticationResult", "IdToken")
 
     def __get_authentication_request(self, username):
         """
@@ -146,15 +145,14 @@ class AwsIdp:
 
         """
 
-        auth_request = {
+        return {
             "AuthParameters": {
                 "USERNAME": username,
-                "SRP_A": self.__long_to_hex(self.large_a_value)
+                "SRP_A": self.__long_to_hex(self.large_a_value),
             },
             "AuthFlow": "USER_SRP_AUTH",
-            "ClientId": self.client_id
+            "ClientId": self.client_id,
         }
-        return auth_request
 
     def __get_challenge_response_request(self, challenge_parameters, password):
         """ Create a Challenge Response Request object.
@@ -191,17 +189,16 @@ class AwsIdp:
             bytearray(timestamp, 'utf-8')
         hmac_obj = hmac.new(hkdf, msg, digestmod=hashlib.sha256)
         signature_string = base64.standard_b64encode(hmac_obj.digest()).decode('utf-8')
-        challenge_request = {
+        return {
             "ChallengeResponses": {
                 "USERNAME": user_id,
                 "TIMESTAMP": timestamp,
                 "PASSWORD_CLAIM_SECRET_BLOCK": secret_block,
-                "PASSWORD_CLAIM_SIGNATURE": signature_string
+                "PASSWORD_CLAIM_SIGNATURE": signature_string,
             },
             "ChallengeName": "PASSWORD_VERIFIER",
-            "ClientId": self.client_id
+            "ClientId": self.client_id,
         }
-        return challenge_request
 
     def __get_hkdf_key_for_password(self, username, password, server_b_value, salt):
         """ Calculates the final hkdf based on computed S value, and computed U value and the key.
@@ -219,18 +216,17 @@ class AwsIdp:
         u_value = self.__calculate_u(self.large_a_value, server_b_value)
         if u_value == 0:
             raise ValueError('U cannot be zero.')
-        username_password = '%s%s:%s' % (self.pool_id.split('_')[1], username, password)
+        username_password = f"{self.pool_id.split('_')[1]}{username}:{password}"
         username_password_hash = self.__hash_sha256(username_password.encode('utf-8'))
 
         x_value = self.__hex_to_long(self.__hex_hash(self.__pad_hex(salt) + username_password_hash))
         g_mod_pow_xn = pow(self.g, x_value, self.big_n)
         int_value2 = server_b_value - self.k * g_mod_pow_xn
         s_value = pow(int_value2, self.small_a_value + u_value * x_value, self.big_n)
-        hkdf = self.__compute_hkdf(
+        return self.__compute_hkdf(
             bytearray.fromhex(self.__pad_hex(s_value)),
-            bytearray.fromhex(self.__pad_hex(self.__long_to_hex(u_value)))
+            bytearray.fromhex(self.__pad_hex(self.__long_to_hex(u_value))),
         )
-        return hkdf
 
     def __compute_hkdf(self, ikm, salt):
         """ Standard hkdf algorithm
@@ -314,14 +310,16 @@ class AwsIdp:
         """
 
         # noinspection PyTypeChecker
-        if not isinstance(long_int, basestring):
-            hash_str = AwsIdp.__long_to_hex(long_int)
-        else:
-            hash_str = long_int
+        hash_str = (
+            long_int
+            if isinstance(long_int, basestring)
+            else AwsIdp.__long_to_hex(long_int)
+        )
+
         if len(hash_str) % 2 == 1:
-            hash_str = '0%s' % hash_str
+            hash_str = f'0{hash_str}'
         elif hash_str[0] in '89ABCDEFabcdef':
-            hash_str = '00%s' % hash_str
+            hash_str = f'00{hash_str}'
         return hash_str
 
     @staticmethod
@@ -344,7 +342,8 @@ class AwsIdp:
         days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
         time_now = datetime.datetime.utcnow()
-        format_string = "{} {} {} %H:%M:%S UTC %Y".format(days[time_now.weekday()], months[time_now.month], time_now.day)
+        format_string = f"{days[time_now.weekday()]} {months[time_now.month]} {time_now.day} %H:%M:%S UTC %Y"
+
         time_string = datetime.datetime.utcnow().strftime(format_string)
         Logger.debug("AWS Auth Timestamp: %s", time_string)
         return time_string

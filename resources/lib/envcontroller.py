@@ -67,7 +67,7 @@ class EnvController:
             version = xbmc.getInfoLabel("system.buildversion")
             build_date = xbmc.getInfoLabel("system.builddate")
 
-            info_string = "%s: %s" % ("Version", version)
+            info_string = f"Version: {version}"
             info_string = "%s\n%s: %s" % (info_string, "BuildDate", build_date)
             info_string = "%s\n%s: %s" % (info_string, "Environment", self.__get_environment())
             info_string = "%s\n%s: %s" % (info_string, "Platform", self.get_platform(True))
@@ -96,7 +96,7 @@ class EnvController:
             # get the script directory
             dir_script = config.addonDir
             walk_source_path = os.path.abspath(ospathjoin(config.rootDir, ".."))
-            dir_print = "Folder Structure of %s (%s)" % (config.appName, dir_script)
+            dir_print = f"Folder Structure of {config.appName} ({dir_script})"
 
             # instead of walking all directories and files and then see if the
             # folders is in the exclude list, we first list the first children.
@@ -119,7 +119,7 @@ class EnvController:
                         if file_name.startswith(".") or file_name.endswith(".pyo") or file_name.endswith(".pyc"):
                             continue
                         dir_print = "%s\n%s" % (dir_print, ospathjoin(directory, file_name))
-            self.logger.debug("%s" % (dir_print,))
+            self.logger.debug(f"{dir_print}")
         except:
             self.logger.critical("Error printing folder %s", directory, exc_info=True)
 
@@ -133,12 +133,13 @@ class EnvController:
 
         try:
             input_stream_adaptive_id = 'inputstream.adaptive'
-            if not xbmc.getCondVisibility('System.HasAddon("{}")'.format(input_stream_adaptive_id)):
+            if not xbmc.getCondVisibility(
+                f'System.HasAddon("{input_stream_adaptive_id}")'
+            ):
                 return "<no-addon>"
 
             addon = xbmcaddon.Addon(input_stream_adaptive_id)
-            decrypter_path_from_settings = addon.getSetting('DECRYPTERPATH')
-            if decrypter_path_from_settings:
+            if decrypter_path_from_settings := addon.getSetting('DECRYPTERPATH'):
                 cdm_path = translatePath(decrypter_path_from_settings)
             else:
                 cdm_path = os.path.join(translatePath("special://home/"), "cdm")
@@ -294,7 +295,7 @@ class EnvController:
         major = sys.version_info[0]
         minor = sys.version_info[1]
         build = sys.version_info[2]
-        return "%s.%s.%s" % (major, minor, build)
+        return f"{major}.{minor}.{build}"
 
     def __get_environment(self):
         """ Gets the type of environment for Kodi in a string:
@@ -312,15 +313,9 @@ class EnvController:
 
         env = os.environ.get("OS", "win32")
         if env == "Linux":
-            if is_x64:
-                return "Linux64"
-            return "Linux"
-
+            return "Linux64" if is_x64 else "Linux"
         elif env == "OS X":
             return "OS X"
 
         else:
-            if is_x64:
-                return "Win64"
-
-            return "Win32"
+            return "Win64" if is_x64 else "Win32"

@@ -133,7 +133,8 @@ class Channel(chn_class.Channel):
         title = result_set["title"].replace("-", " ").title()
 
         # http://www.nickjr.nl/data/propertyStreamPage.json?&urlKey=dora&apiKey=nl_global_Nickjr_web&page=1
-        url = "%s/data/propertyStreamPage.json?&urlKey=%s&apiKey=%s&page=1" % (self.baseUrl, result_set["seriesKey"], self.__apiKey)
+        url = f'{self.baseUrl}/data/propertyStreamPage.json?&urlKey={result_set["seriesKey"]}&apiKey={self.__apiKey}&page=1'
+
         item = MediaItem(title, url)
         item.complete = True
         item.HttpHeaders = self.httpHeaders
@@ -160,7 +161,7 @@ class Channel(chn_class.Channel):
             return None
 
         more = LanguageHelper.get_localized_string(LanguageHelper.MorePages)
-        url = "%s=%s" % (self.parentItem.url.rsplit("=", 1)[0], next_page)
+        url = f'{self.parentItem.url.rsplit("=", 1)[0]}={next_page}'
         item = MediaItem(more, url)
         item.complete = True
         return item
@@ -187,8 +188,7 @@ class Channel(chn_class.Channel):
         items = []
         for result_set in result_sets.get("items", []):
             if "data" in result_set and result_set["data"]:
-                item = self.create_video_item(result_set["data"])
-                if item:
+                if item := self.create_video_item(result_set["data"]):
                     items.append(item)
 
         return items
@@ -226,8 +226,8 @@ class Channel(chn_class.Channel):
             title = result_set["title"]
 
         video_id = result_set["id"]
-        url = "http://media.mtvnservices.com/pmt/e1/access/index.html?uri=mgid:%s:%s&configtype=edge" \
-              % (self.__mgid, video_id, )
+        url = f"http://media.mtvnservices.com/pmt/e1/access/index.html?uri=mgid:{self.__mgid}:{video_id}&configtype=edge"
+
 
         item = MediaItem(title, url, media_type=EPISODE)
         item.description = result_set.get("description", None)
@@ -277,7 +277,7 @@ class Channel(chn_class.Channel):
         for stream_part in stream_parts:
             stream_url = stream_part["group"]["content"]
             stream_url = stream_url.replace("&device={device}", "")
-            stream_url = "%s&format=json&acceptMethods=hls" % (stream_url, )
+            stream_url = f"{stream_url}&format=json&acceptMethods=hls"
             stream_data = UriHandler.open(stream_url)
             stream = JsonHelper(stream_data)
 

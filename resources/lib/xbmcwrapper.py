@@ -204,24 +204,19 @@ class XbmcWrapper:
             title = LanguageHelper.get_localized_string(title)
 
         # check for a title
-        if title:
-            notification_title = "%s - %s" % (Config.appName, title)
-        else:
-            notification_title = Config.appName
-
+        notification_title = f"{Config.appName} - {title}" if title else Config.appName
         # check for content and merge multiple lines. This is to stay compatible
         # with the LanguageHelper.get_localized_string that returns strings as arrays
         # if they are multiple lines (this is because XbmcWrapper.show_dialog needs
         # this for multi-line dialog boxes.
         if not lines:
             notification_content = ""
+        elif isinstance(lines, int):
+            notification_content = LanguageHelper.get_localized_string(lines)
+        elif isinstance(lines, (tuple, list)):
+            notification_content = " ".join(lines)
         else:
-            if isinstance(lines, int):
-                notification_content = LanguageHelper.get_localized_string(lines)
-            elif isinstance(lines, (tuple, list)):
-                notification_content = " ".join(lines)
-            else:
-                notification_content = lines
+            notification_content = lines
 
         # determine the duration
         notification_type = notification_type.lower()
@@ -296,13 +291,8 @@ class XbmcWrapper:
         LockWithDialog.close_busy_dialog()
 
         msg_box = xbmcgui.Dialog()
-        if title == "":
-            header = Config.appName
-        else:
-            header = "%s - %s" % (Config.appName, title)
-
-        ok = msg_box.yesno(header, message or "")
-        return ok
+        header = Config.appName if title == "" else f"{Config.appName} - {title}"
+        return msg_box.yesno(header, message or "")
 
     @staticmethod
     def show_text(title, message):
@@ -325,13 +315,8 @@ class XbmcWrapper:
         LockWithDialog.close_busy_dialog()
 
         text_box = xbmcgui.Dialog()
-        if not title:
-            header = Config.appName
-        else:
-            header = "%s - %s" % (Config.appName, title)
-
-        ok = text_box.textviewer(header, message or "")
-        return ok
+        header = f"{Config.appName} - {title}" if title else Config.appName
+        return text_box.textviewer(header, message or "")
 
     @staticmethod
     def show_dialog(title, message):
@@ -354,13 +339,8 @@ class XbmcWrapper:
         LockWithDialog.close_busy_dialog()
 
         msg_box = xbmcgui.Dialog()
-        if not title:
-            header = Config.appName
-        else:
-            header = "%s - %s" % (Config.appName, title)
-
-        ok = msg_box.ok(header, message or "")
-        return ok
+        header = f"{Config.appName} - {title}" if title else Config.appName
+        return msg_box.ok(header, message or "")
 
     @staticmethod
     def show_folder_selection(title, default_path=None, dialog_type=3, mask=''):
@@ -388,8 +368,9 @@ class XbmcWrapper:
             default_path = translatePath("special://home")
 
         browse_dialog = xbmcgui.Dialog()
-        dest_folder = browse_dialog.browse(dialog_type, title, 'files', mask, False, False, default_path)
-        return dest_folder
+        return browse_dialog.browse(
+            dialog_type, title, 'files', mask, False, False, default_path
+        )
 
     @staticmethod
     def execute_json_rpc(json, logger=None):

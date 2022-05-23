@@ -152,7 +152,7 @@ class ActionParser(object):
         if item is None and channel is not None and channel.uses_external_addon:
             return channel.addonUrl
 
-        params = dict()
+        params = {}
         if channel:
             params[keyword.CHANNEL] = channel.url_id
 
@@ -160,7 +160,7 @@ class ActionParser(object):
 
         # it might have an item or not
         if item is not None:
-            params[keyword.PICKLE] = "{}--{}".format(store_id, item.guid)
+            params[keyword.PICKLE] = f"{store_id}--{item.guid}"
 
             if action == PLAY_VIDEO and item.isLive:
                 params[keyword.RANDOM_LIVE] = random.randint(10000, 99999)
@@ -168,9 +168,9 @@ class ActionParser(object):
         if category:
             params[keyword.CATEGORY] = category
 
-        url = "%s?" % (self.pluginName, )
-        for k in params.keys():
-            url = "%s%s=%s&" % (url, k, params[k])
+        url = f"{self.pluginName}?"
+        for k in params:
+            url = f"{url}{k}={params[k]}&"
 
         url = url.strip('&')
         # Logger.Trace("Created url: '%s'", url)
@@ -203,7 +203,7 @@ class ActionParser(object):
         :rtype: dict[str,str|None]
 
         """
-        result = dict()
+        result = {}
         query_string = query_string.strip('?')
         if query_string == '':
             return result
@@ -214,12 +214,13 @@ class ActionParser(object):
                 result[k] = v
 
             # if the channelcode was empty, it was stripped, add it again.
-            if keyword.CHANNEL in result and "-" in result[keyword.CHANNEL]:
-                id_parts = result[keyword.CHANNEL].split("-")
-                result[keyword.CHANNEL] = id_parts[0]
-                result[keyword.CHANNEL_CODE] = id_parts[1]
-            elif keyword.CHANNEL in result and "." not in result[keyword.CHANNEL]:
-                result[keyword.CHANNEL] = ActionParser.__lookup[result[keyword.CHANNEL]]
+            if keyword.CHANNEL in result:
+                if "-" in result[keyword.CHANNEL]:
+                    id_parts = result[keyword.CHANNEL].split("-")
+                    result[keyword.CHANNEL] = id_parts[0]
+                    result[keyword.CHANNEL_CODE] = id_parts[1]
+                elif "." not in result[keyword.CHANNEL]:
+                    result[keyword.CHANNEL] = ActionParser.__lookup[result[keyword.CHANNEL]]
 
             if keyword.CHANNEL_CODE not in result:
                 Logger.debug("Adding ChannelCode=None as it was missing from the dict: %s", result)

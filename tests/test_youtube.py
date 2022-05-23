@@ -22,12 +22,12 @@ class TestYoutube(unittest.TestCase):
         bitrates = []
         for s, b in results:
             if s.count("://") > 1:
-                self.fail("Duplicate protocol in url: {}".format(s))
+                self.fail(f"Duplicate protocol in url: {s}")
             if not s.startswith("plugin://plugin.video.youtube"):
-                self.fail("Invalid Kodi-plugin protocol: {}".format(s))
+                self.fail(f"Invalid Kodi-plugin protocol: {s}")
             streams.append(s)
             bitrates.append(b)
-            print("%s - %s" % (b, s))
+            print(f"{b} - {s}")
             Logger.info("%s - %s", b, s)
 
         self.assertEqual(len(streams), 1)

@@ -49,11 +49,8 @@ class Channel(chn_class.Channel):
         if item is None:
             return None
 
-        item.url = "https://api.ibbroadcast.nl/clips.ashx?" \
-                   "key=hU6YJdwThYkjsb1Z4qRDQ795UduP2CYRYm1An2amlxk=&" \
-                   "mode=getclip&" \
-                   "output=jsonp&" \
-                   "id={}".format(result_set["id"])
+        item.url = f'https://api.ibbroadcast.nl/clips.ashx?key=hU6YJdwThYkjsb1Z4qRDQ795UduP2CYRYm1An2amlxk=&mode=getclip&output=jsonp&id={result_set["id"]}'
+
         return item
 
     def update_video_item(self, item):

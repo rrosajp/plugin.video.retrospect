@@ -33,7 +33,8 @@ class Resources(TextureHandler):
         elif file_name.startswith("resource://"):
             return_value = file_name
         else:
-            return_value = "resource://%s/channels/%s/%s" % (self.__resource_add_on, file_name[0].lower(), file_name)
+            return_value = f"resource://{self.__resource_add_on}/channels/{file_name[0].lower()}/{file_name}"
+
 
         self._logger.debug("Resolved texture '%s' to '%s'", file_name, return_value)
         return return_value
@@ -48,10 +49,7 @@ class Resources(TextureHandler):
 
         """
 
-        if not uri:
-            return True
-
-        return uri.startswith("resource://")
+        return uri.startswith("resource://") if uri else True
 
     def _purge_texture_cache(self, channel_path):
         """ Removes those entries from the textures cache that are no longer required.

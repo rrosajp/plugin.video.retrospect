@@ -44,7 +44,7 @@ class Player(xbmc.Player):
             return
 
         # noinspection PyTypeChecker
-        for i in range(0, int(time_out / self.__pollInterval)):
+        for i in range(int(time_out / self.__pollInterval)):
             if self.__monitor.abortRequested():
                 Logger.debug("Player: Abort requested (%s)", i * self.__pollInterval)
                 return

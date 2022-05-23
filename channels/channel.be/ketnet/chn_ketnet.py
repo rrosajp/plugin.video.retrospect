@@ -26,16 +26,13 @@ class Channel(chn_class.Channel):
 
         chn_class.Channel.__init__(self, channel_info)
 
-        # ============== Actual channel setup STARTS here and should be overwritten from derived classes ===============
+        if self.channelCode != "ketnet":
+            raise IndexError(f"Unknow channel code {self.channelCode}")
 
-        if self.channelCode == "ketnet":
-            self.noImage = "ketnetimage.jpg"
-            self.mainListUri = self.__get_graph_url("content/ketnet/nl/kijken.model.json")
-            self.baseUrl = "https://www.ketnet.be"
-            self.mediaUrlRegex = r'playerConfig\W*=\W*(\{[\w\W]{0,2000}?);(?:.vamp|playerConfig)'
-
-        else:
-            raise IndexError("Unknow channel code {}".format(self.channelCode))
+        self.noImage = "ketnetimage.jpg"
+        self.mainListUri = self.__get_graph_url("content/ketnet/nl/kijken.model.json")
+        self.baseUrl = "https://www.ketnet.be"
+        self.mediaUrlRegex = r'playerConfig\W*=\W*(\{[\w\W]{0,2000}?);(?:.vamp|playerConfig)'
 
         self._add_data_parser(
             self.mainListUri, json=True, name="MainList Parser for GraphQL",
@@ -181,13 +178,14 @@ class Channel(chn_class.Channel):
 
         json_data = JsonHelper(data)
         data = json_data.get_value("data", "page", "pagecontent")
-        swim_lane_data = None
-        for sub_item in data:
-            if sub_item.get("id") == self.parentItem.metaData["id"]:
-                swim_lane_data = sub_item
-                break
-
-        if swim_lane_data:
+        if swim_lane_data := next(
+            (
+                sub_item
+                for sub_item in data
+                if sub_item.get("id") == self.parentItem.metaData["id"]
+            ),
+            None,
+        ):
             json_data.json["data"]["page"]["pagecontent"] = swim_lane_data["items"]
 
         return json_data, items
@@ -207,13 +205,12 @@ class Channel(chn_class.Channel):
         """
 
         title = result_set["title"]
-        url = "{}/{}".format(self.parentItem.url, title)
+        url = f"{self.parentItem.url}/{title}"
         item = MediaItem(result_set["title"], url)
         item.poster = result_set.get("imageUrl")
         items = result_set["items"]
         for sub_item in items:
-            video_item = self.create_typed_item(sub_item)
-            if video_item:
+            if video_item := self.create_typed_item(sub_item):
                 item.items.append(video_item)
         return item
 
@@ -244,8 +241,7 @@ class Channel(chn_class.Channel):
         item.description = result_set.get("description")
         item.thumb = result_set.get("imageUrl")
 
-        duration = int(result_set.get("duration", 0) / 1000)
-        if duration:
+        if duration := int(result_set.get("duration", 0) / 1000):
             item.set_info_label("duration", duration)
 
         allowed_region = result_set.get("allowedRegion", "").lower()
@@ -291,8 +287,4 @@ class Channel(chn_class.Channel):
     def __get_graph_url(self, id):
         graph_query = "query GetPage($id: String!) { page(id: $id) { ... on Program { pageType ...program __typename } ... on Video { pageType ...video __typename } ... on Pagecontent { pageType ...pagecontent __typename } __typename } }  fragment program on Program { id title header { ...header __typename } activeTab tabs { name title type playlists { ...seasonOverviewTabItem __typename } pagecontent { ...pagecontentItem __typename } __typename } __typename }  fragment seasonOverviewTabItem on Playlist { name title type imageUrl items { id titlePlaylist subtitlePlaylist scaledPoster { ...scaledImage __typename } allowedRegion duration episodeNr seasonTitle imageUrl availableUntilDate publicationDate description __typename } __typename }  fragment video on Video { id videoType titleVideodetail subtitleVideodetail scaledPoster { ...scaledImage __typename } description availableUntilDate publicationDate duration episodeNr vrtPlayer { ...vrtPlayerFragment __typename } suggestions { id titleSuggestion subtitleSuggestion scaledPoster { ...scaledImage __typename } __typename } playlists { name title items { id titlePlaylist subtitlePlaylist scaledPoster { ...scaledImage __typename } description __typename } __typename } activePlaylist trackingData { programName seasonName episodeName episodeNr episodeBroadcastDate __typename } __typename }  fragment pagecontent on Pagecontent { pagecontent { ...pagecontentItem __typename } __typename }  fragment pagecontentItem on PagecontentItem { ... on Header { ...header __typename } ... on Highlight { ...highlight __typename } ... on Swimlane { ...swimlane __typename } __typename }  fragment highlight on Highlight { type title description link linkItem { ... on Game { id __typename } ... on Program { id __typename } ... on Story { id __typename } ... on Theme { id __typename } ... on Video { id __typename } __typename } buttonText imageUrl size __typename }  fragment swimlane on Swimlane { id type title style items { ... on Video { ...swimlaneVideo __typename } ... on Program { ...swimlaneProgram __typename } __typename } __typename }  fragment swimlaneVideo on Video { id type title imageUrl titleSwimlane subtitleSwimlane duration __typename }  fragment swimlaneProgram on Program { id type title accentColor imageUrl logoUrl posterUrl __typename }  fragment scaledImage on ScaledImage { small medium large __typename }  fragment vrtPlayerFragment on VrtPlayerConfig { mediaReference aggregatorUrl clientCode __typename }  fragment header on Header { type title description imageUrl logoUrl __typename }"
         graph_id = "{{\"id\": \"{}\"}}".format(id)
-        graph_url = "https://senior-bff.ketnet.be/graphql?query={}&variables={}".format(
-            HtmlEntityHelper.url_encode(graph_query),
-            HtmlEntityHelper.url_encode(graph_id)
-        )
-        return graph_url
+        return f"https://senior-bff.ketnet.be/graphql?query={HtmlEntityHelper.url_encode(graph_query)}&variables={HtmlEntityHelper.url_encode(graph_id)}"

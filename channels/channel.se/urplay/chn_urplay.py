@@ -326,7 +326,7 @@ class Channel(chn_class.Channel):
         """
 
         if 'thumburl' in result_set and not result_set['thumburl'].startswith("http"):
-            result_set['thumburl'] = "%s/%s" % (self.baseUrl, result_set["thumburl"])
+            result_set['thumburl'] = f'{self.baseUrl}/{result_set["thumburl"]}'
 
         slug = result_set["slug"]
         url = self.__cateogory_urls.get(slug)
@@ -361,13 +361,14 @@ class Channel(chn_class.Channel):
         max_items_per_page = 20
 
         categories = {
-            LanguageHelper.Popular: "https://urplay.se/api/v1/search?product_type=program&query=&rows={}&start=0&view=most_viewed".format(max_items_per_page),
-            LanguageHelper.MostRecentEpisodes: "https://urplay.se/api/v1/search?product_type=program&rows={}&start=0&view=published".format(max_items_per_page),
-            LanguageHelper.LastChance: "https://urplay.se/api/v1/search?product_type=program&rows={}&start=0&view=last_chance".format(max_items_per_page),
+            LanguageHelper.Popular: f"https://urplay.se/api/v1/search?product_type=program&query=&rows={max_items_per_page}&start=0&view=most_viewed",
+            LanguageHelper.MostRecentEpisodes: f"https://urplay.se/api/v1/search?product_type=program&rows={max_items_per_page}&start=0&view=published",
+            LanguageHelper.LastChance: f"https://urplay.se/api/v1/search?product_type=program&rows={max_items_per_page}&start=0&view=last_chance",
             LanguageHelper.Categories: "https://urplay.se/",
             LanguageHelper.Search: "searchSite",
-            LanguageHelper.TvShows: "#tvshows"
+            LanguageHelper.TvShows: "#tvshows",
         }
+
 
         for cat in categories:
             title = LanguageHelper.get_localized_string(cat)
@@ -441,7 +442,7 @@ class Channel(chn_class.Channel):
         Logger.trace(result_set)
 
         title = "%(title)s" % result_set
-        url = "https://urplay.se/api/v1/series?id={}".format(result_set["id"])
+        url = f'https://urplay.se/api/v1/series?id={result_set["id"]}'
         fanart = "https://assets.ur.se/id/%(id)s/images/1_hd.jpg" % result_set
         thumb = "https://assets.ur.se/id/%(id)s/images/1_l.jpg" % result_set
         item = MediaItem(title, url)
@@ -471,7 +472,7 @@ class Channel(chn_class.Channel):
             return None
 
         title = "%(label)s" % result_set
-        url = "https://urplay.se/api/v1/series?id={}".format(result_set["id"])
+        url = f'https://urplay.se/api/v1/series?id={result_set["id"]}'
         fanart = "https://assets.ur.se/id/%(id)s/images/1_hd.jpg" % result_set
         thumb = "https://assets.ur.se/id/%(id)s/images/1_l.jpg" % result_set
         item = FolderItem(title, url, content_type=contenttype.EPISODES, media_type=mediatype.FOLDER)
@@ -502,9 +503,7 @@ class Channel(chn_class.Channel):
 
         Logger.info("Performing Post-Processing")
 
-        # check if there are seasons, if so, filter all the videos out
-        seasons = [i for i in items if i.metaData.get("season", False)]
-        if seasons:
+        if seasons := [i for i in items if i.metaData.get("season", False)]:
             Logger.debug("Seasons found, skipping any videos.")
             return seasons
 
@@ -564,13 +563,13 @@ class Channel(chn_class.Channel):
             if bool(episode):
                 title = "{} - {} {:02d} - {}".format(show_title, self.__episode_text, episode, title)
             else:
-                title = "{} - {}".format(show_title, title)
+                title = f"{show_title} - {title}"
 
         elif bool(episode):
             title = "{} {:02d} - {}".format(self.__episode_text, episode, title)
 
         slug = result_set['slug']
-        url = "%s/program/%s" % (self.baseUrl, slug)
+        url = f"{self.baseUrl}/program/{slug}"
 
         item = MediaItem(title, url)
         item.media_type = mediatype.EPISODE
@@ -592,8 +591,7 @@ class Channel(chn_class.Channel):
         if item.fanart == self.fanart and thumb_fanart:
             item.fanart = thumb_fanart
 
-        duration = result_set.get("duration")
-        if duration:
+        if duration := result_set.get("duration"):
             item.set_info_label("duration", int(duration))
 
         # Determine the date and keep timezones into account
@@ -678,10 +676,10 @@ class Channel(chn_class.Channel):
         Logger.trace("Found RTMP Proxy: %s", proxy)
 
         stream_infos = json.get_value("props", "pageProps", "program", "streamingInfo")
+        bitrates = {"mp3": 400, "m4a": 250, "sd": 1200, "hd": 2000, "tt": None}
         for stream_type, stream_info in stream_infos.items():
             Logger.trace(stream_info)
             default_stream = stream_info.get("default", False)
-            bitrates = {"mp3": 400, "m4a": 250, "sd": 1200, "hd": 2000, "tt": None}
             for quality, bitrate in bitrates.items():
                 stream = stream_info.get(quality)
                 if stream is None:
@@ -695,7 +693,7 @@ class Channel(chn_class.Channel):
                 bitrate = bitrate if default_stream else bitrate + 1
                 if stream_type == "raw":
                     bitrate += 1
-                url = "https://%s/%smaster.m3u8" % (proxy, stream_url)
+                url = f"https://{proxy}/{stream_url}master.m3u8"
                 item.add_stream(url, bitrate)
 
         item.complete = True
@@ -705,7 +703,7 @@ class Channel(chn_class.Channel):
         result_type = result_set["mediaType"].lower()
         if result_type == "series":
             return self.__create_search_result(result_set, "series")
-        elif result_type == "episode" or result_type == "single":
+        elif result_type in ["episode", "single"]:
             return self.__create_search_result(result_set, "program")
 
         Logger.error("Missing search result type: %s", result_type)
@@ -729,19 +727,18 @@ class Channel(chn_class.Channel):
         # Logger.trace(result_set)
 
         if result_type == "series":
-            url = "https://urplay.se/api/v1/series?id={}".format(result_set["id"])
+            url = f'https://urplay.se/api/v1/series?id={result_set["id"]}'
             item = FolderItem(result_set["title"], url, contenttype.EPISODES, media_type=mediatype.FOLDER)
         else:
-            url = "https://urplay.se/{}/{}".format(result_type, result_set["slug"])
-            series_title = result_set.get("seriesTitle")
-            if series_title:
-                title = "{} - {}".format(series_title, result_set["title"])
+            url = f'https://urplay.se/{result_type}/{result_set["slug"]}'
+            if series_title := result_set.get("seriesTitle"):
+                title = f'{series_title} - {result_set["title"]}'
             else:
                 title = result_set["title"]
             item = MediaItem(title, url, media_type=mediatype.EPISODE)
 
-        item.thumb = "https://assets.ur.se/id/{}/images/1_hd.jpg".format(result_set["id"])
-        item.fanart = "https://assets.ur.se/id/{}/images/1_l.jpg".format(result_set["id"])
+        item.thumb = f'https://assets.ur.se/id/{result_set["id"]}/images/1_hd.jpg'
+        item.fanart = f'https://assets.ur.se/id/{result_set["id"]}/images/1_l.jpg'
 
         if result_type == "program":
             item.set_info_label("duration", result_set["duration"] * 60)
@@ -774,9 +771,12 @@ class Channel(chn_class.Channel):
 
         progress = None
         if use_pb:
-            progress = XbmcDialogProgressWrapper("{} - {}".format(Config.appName, self.channelName), status)
+            progress = XbmcDialogProgressWrapper(
+                f"{Config.appName} - {self.channelName}", status
+            )
 
-        for p in range(0, max_iterations):
+
+        for p in range(max_iterations):
             url = url_format.format(results_per_page, p * results_per_page)
             if (progress and progress.progress_update(
                     p, max_iterations, int(p * 100 / max_iterations), False, updated.format(p + 1, max_iterations))):

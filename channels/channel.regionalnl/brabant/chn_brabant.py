@@ -34,15 +34,14 @@ class Channel(chn_class.Channel):
         self.channelBitrate = 850  # : the default bitrate
         self.liveUrl = None        # : the live url if present
 
-        if self.channelCode == "omroepbrabant":
-            self.noImage = "omroepbrabantimage.png"
-            self.mainListUri = "#alphalisting"
-            self.baseUrl = "http://www.omroepbrabant.nl"
-            self.liveUrl = "http://feed.omroepbrabant.nl/s520/tv.json"
-            self.channelBitrate = 1500
-
-        else:
+        if self.channelCode != "omroepbrabant":
             raise NotImplementedError("Channelcode '%s' not implemented" % (self.channelCode, ))
+
+        self.noImage = "omroepbrabantimage.png"
+        self.mainListUri = "#alphalisting"
+        self.baseUrl = "http://www.omroepbrabant.nl"
+        self.liveUrl = "http://feed.omroepbrabant.nl/s520/tv.json"
+        self.channelBitrate = 1500
 
         self._add_data_parser(self.mainListUri,
                               preprocessor=self.create_alpha_listing,
@@ -95,7 +94,7 @@ class Channel(chn_class.Channel):
                 url = base_url
                 title = "\a{}".format(LanguageHelper.get_localized_string(LanguageHelper.OtherChars))
             else:
-                url = "{}/{}".format(base_url, char)
+                url = f"{base_url}/{char}"
                 title = title_format % (char, )
 
             item = FolderItem(title, url, content_type=contenttype.TVSHOWS)
@@ -127,7 +126,7 @@ class Channel(chn_class.Channel):
         Logger.trace(result_set)
         title = result_set["title"]
         episode_id = result_set["id"]
-        url = "https://api.omroepbrabant.nl/api/media/series/v2/{}".format(episode_id)
+        url = f"https://api.omroepbrabant.nl/api/media/series/v2/{episode_id}"
 
         item = FolderItem(title, url, content_type=contenttype.TVSHOWS)
         item.thumb = self.__create_image_url(result_set["imageUrl"], "thumb")
@@ -183,7 +182,8 @@ class Channel(chn_class.Channel):
         thumb = self.__create_image_url(image, "thumb")
         poster = self.__create_image_url(image, "poster")
         # url = "https://api.omroepbrabant.nl/api/media/program/{}".format(result_set["externalId"])
-        url = "https://omroepbrabant.bbvms.com/p/default/q/sourceid_string:{}.json".format(result_set["externalId"])
+        url = f'https://omroepbrabant.bbvms.com/p/default/q/sourceid_string:{result_set["externalId"]}.json'
+
 
         item = MediaItem(title, url, media_type=mediatype.EPISODE)
         item.thumb = thumb
@@ -233,7 +233,7 @@ class Channel(chn_class.Channel):
         for clip in clip_data:
             url = clip["src"]
             if not url.startswith("http"):
-                url = "{}{}".format(server, clip["src"])
+                url = f'{server}{clip["src"]}'
             item.add_stream(url, int(clip["bandwidth"]))
             item.complete = True
 

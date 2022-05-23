@@ -52,7 +52,4 @@ class EncodingHelper(object):
             data = data.encode()
 
         hash_tool.update(data)
-        if to_upper:
-            return hash_tool.hexdigest().upper()
-        else:
-            return hash_tool.hexdigest()
+        return hash_tool.hexdigest().upper() if to_upper else hash_tool.hexdigest()

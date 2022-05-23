@@ -101,8 +101,7 @@ class Channel(chn_class.Channel):
 
         """
 
-        hidden = result_set["hidden"]
-        if hidden:
+        if hidden := result_set["hidden"]:
             return None
 
         name = result_set["title"]
@@ -110,14 +109,14 @@ class Channel(chn_class.Channel):
         # item_id = result_set["uid"]
         slug = result_set["url"]
         # https://docs.microsoft.com/api/hierarchy/shows/xamarinshow/episodes?page=0&locale=en-us&pageSize=30&orderBy=uploaddate%20desc
-        url = "{}/api/hierarchy{}episodes?page=0&locale=en-us&pageSize=30&orderBy=uploaddate%20desc".format(self.baseUrl, slug)
+        url = f"{self.baseUrl}/api/hierarchy{slug}episodes?page=0&locale=en-us&pageSize=30&orderBy=uploaddate%20desc"
+
 
         item = FolderItem(name, url, content_type=contenttype.EPISODES)
 
-        thumb = result_set["image_url"]
-        if thumb:
+        if thumb := result_set["image_url"]:
             # https://docs.microsoft.com/shows/vs-code-livestreams/media/vscodelivestream_383x215.png
-            thumb = "{}{}{}".format(self.baseUrl, slug, thumb)
+            thumb = f"{self.baseUrl}{slug}{thumb}"
             item.thumb = thumb
 
         self.__set_date(result_set.get("latest_episode_upload_at"), item)
@@ -143,7 +142,7 @@ class Channel(chn_class.Channel):
 
         # we limit at 5 pages of 30 items
         while len(items) < max_items and len(items) < 5 * 30:
-            url = self.parentItem.url.replace("page=0", "page={}".format(page_number))
+            url = self.parentItem.url.replace("page=0", f"page={page_number}")
             raw_data = UriHandler.open(url)
             json_data = JsonHelper(raw_data)
             items += json_data.get_value("episodes", fallback=[])
@@ -176,15 +175,12 @@ class Channel(chn_class.Channel):
         episode = None
         season = None
         if "[" in title:
-            episode_info = Regexer.do_regex(self.__episode_regex, title)
-            if episode_info:
+            if episode_info := Regexer.do_regex(self.__episode_regex, title):
                 episode = int(episode_info[0][1])
                 season = "1"  # int(episode_info[0][2])
                 title = episode_info[0][0]
                 if episode_info[0][3]:
-                    title = "{} - {}".format(episode_info[0][0], episode_info[0][3])
-
-                # title = "{:02d} of {:02d} - {}".format(episode, season, title)
+                    title = f"{episode_info[0][0]} - {episode_info[0][3]}"
 
         description = result_set["description"]
         date_value = result_set["uploadDate"]
@@ -192,7 +188,8 @@ class Channel(chn_class.Channel):
         if "entryId" not in result_set:
             return None
 
-        url = "{}/api/video/public/v1/entries/batch?ids={}".format(self.baseUrl, result_set["entryId"])
+        url = f'{self.baseUrl}/api/video/public/v1/entries/batch?ids={result_set["entryId"]}'
+
         # https://docs.microsoft.com/api/video/public/v1/entries/batch?ids=0998ca55-c69f-468e-831d-176cde7e8a78%2C5cb5e481-e64d-4400-bb2d-2f8a6284bd62%2Cc5ccb371-39a6-474c-a9d7-bb8b0fa7567c%2C8b11149d-acaa-4a4b-a50d-5eb010933e5d%2C9fb9f5ed-aca9-48b9-b5c6-298fbbce117b%2Cb1a2aa31-6157-486d-8a2c-73ff70272897%2C89ed8ecb-a660-4ec7-ab1a-f2338410edec%2Ce35cd0b1-d655-4777-a03e-924b3dcd10b1%2Ccdbbafc4-42ba-4261-b0b7-85ddc95cd8d8%2C18123cfb-5973-49aa-8b88-08ce1547f278%2Cd168a18c-9119-4531-a288-8675eea93da5%2C977bf1ce-8ba9-4e07-998d-f87c7d44ba47
 
         item = MediaItem(title, url, media_type=mediatype.EPISODE)
@@ -200,9 +197,8 @@ class Channel(chn_class.Channel):
         if season and episode:
             item.set_season_info(season, episode)
 
-        levels = result_set.get("levels")
-        if levels:
-            item.description = "Levels: {}[CR][CR]{}".format(", ".join(levels), item.description)
+        if levels := result_set.get("levels"):
+            item.description = f'Levels: {", ".join(levels)}[CR][CR]{item.description}'
 
         self.__set_date(date_value, item)
         return item
@@ -239,16 +235,12 @@ class Channel(chn_class.Channel):
         hls = video_data.get("adaptiveVideoUrl")
         high = video_data.get("highQualityVideoUrl")
         medium = video_data.get("mediumQualityVideoUrl")
-        low = video_data.get("lowQualityVideoUrl")
-        if hls and False:
-            pass
-        else:
-            if low:
-                item.add_stream(low, bitrate=400)
-            if medium:
-                item.add_stream(medium, bitrate=1000)
-            if high:
-                item.add_stream(high, bitrate=1400)
+        if low := video_data.get("lowQualityVideoUrl"):
+            item.add_stream(low, bitrate=400)
+        if medium:
+            item.add_stream(medium, bitrate=1000)
+        if high:
+            item.add_stream(high, bitrate=1400)
         item.complete = item.has_streams()
         return item
 
@@ -258,5 +250,4 @@ class Channel(chn_class.Channel):
             date_value = date_value.rsplit(".", 1)[0]
             date_value = date_value.replace("Z", "")
             time_stamp = DateHelper.get_date_from_string(date_value, "%Y-%m-%dT%H:%M:%S")
-            item.set_date(*time_stamp[0:6])
-        pass
+            item.set_date(*time_stamp[:6])

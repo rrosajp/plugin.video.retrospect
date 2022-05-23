@@ -64,13 +64,11 @@ class DateHelper(object):
 
         day_of_week_to_find = possibilities.index(day)
 
-        if day_now < day_of_week_to_find:
-            date_to_find = date + datetime.timedelta(days=day_of_week_to_find - day_now)
-        else:
-            # Now: Su (6), Need Mo (0)
-            date_to_find = date + datetime.timedelta(days=day_of_week_to_find + 7 - day_now)
-
-        return date_to_find
+        return (
+            date + datetime.timedelta(days=day_of_week_to_find - day_now)
+            if day_now < day_of_week_to_find
+            else date + datetime.timedelta(days=day_of_week_to_find + 7 - day_now)
+        )
 
     @staticmethod
     def get_date_for_previous_day(day, possibilities=None, yesterday="Gisteren"):
@@ -97,13 +95,11 @@ class DateHelper(object):
 
         day_of_week_to_find = possibilities.index(day)
 
-        if day_now >= day_of_week_to_find:
-            date_to_find = date - datetime.timedelta(days=day_now - day_of_week_to_find)
-        else:
-            # Now: Su (6), Need Mo (0)
-            date_to_find = date - datetime.timedelta(days=day_now + 7 - day_of_week_to_find)
-
-        return date_to_find
+        return (
+            date - datetime.timedelta(days=day_now - day_of_week_to_find)
+            if day_now >= day_of_week_to_find
+            else date - datetime.timedelta(days=day_now + 7 - day_of_week_to_find)
+        )
 
     @staticmethod
     def get_month_from_name(month, language, short=None):
@@ -118,13 +114,12 @@ class DateHelper(object):
 
         """
 
-        if short is None:
-            try:
-                return DateHelper.__get_month_from_name(month, language)
-            except:
-                return DateHelper.__get_month_from_name(month, language, False)
-        else:
+        if short is not None:
             return DateHelper.__get_month_from_name(month, language, short)
+        try:
+            return DateHelper.__get_month_from_name(month, language)
+        except:
+            return DateHelper.__get_month_from_name(month, language, False)
 
     @staticmethod
     def get_date_from_posix(posix, tz=None):
@@ -168,8 +163,7 @@ class DateHelper(object):
             return naive_datetime
 
         tz_info = pytz.timezone(time_zone)
-        aware_datetime = tz_info.localize(naive_datetime)
-        return aware_datetime
+        return tz_info.localize(naive_datetime)
 
     @staticmethod
     def get_date_from_string(value, date_format="%Y-%m-%dT%H:%M:%S+00:00"):

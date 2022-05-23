@@ -225,17 +225,13 @@ class UriHandler(object):
 
         cookies = UriHandler.instance().cookieJar._cookies[domain][path]
         if not match_start:
-            if name in cookies:
-                return cookies[name]
+            return cookies[name] if name in cookies else None
+        if not (
+            cookies := [c for c in cookies.values() if c.name.startswith(name)]
+        ):
             return None
-
-        # do a startswith search
-        cookies = [c for c in cookies.values() if c.name.startswith(name)]
-        if not cookies:
-            return None
-        else:
-            Logger.trace("Found cookie '%s'", cookies[0].name)
-            return cookies[0]
+        Logger.trace("Found cookie '%s'", cookies[0].name)
+        return cookies[0]
 
     # noinspection PyProtectedMember
     @staticmethod
@@ -290,11 +286,9 @@ class UriHandler(object):
                       ".m4v": "mp4",
                       ".avi": "avi",
                       "h264": "mp4"}
-        for ext in extensions:
-            if url.find(ext) > 0:
-                return extensions[ext]
-
-        return ""
+        return next(
+            (value for ext, value in extensions.items() if url.find(ext) > 0), ""
+        )
 
 
 class _RequestsHandler(object):
@@ -623,10 +617,7 @@ class _RequestsHandler(object):
         animation = animation_frames[self.__animationIndex]
         retrievedsize_mb = 1.0 * retrieved_size / bytes_to_mb
         totalsize_mb = 1.0 * total_size / bytes_to_mb
-        if total_size > 0:
-            percentage = 100.0 * retrieved_size / total_size
-        else:
-            percentage = 0
+        percentage = 100.0 * retrieved_size / total_size if total_size > 0 else 0
         status = '%s - %i%% (%.1f of %.1f MB)' % \
                  (animation, percentage, retrievedsize_mb, totalsize_mb)
         try:

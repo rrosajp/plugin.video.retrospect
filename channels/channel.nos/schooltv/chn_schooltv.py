@@ -89,7 +89,8 @@ class Channel(chn_class.Channel):
 
         Logger.trace(result_set)
 
-        url = "http://m.schooltv.nl/api/v1/programmas/%s/afleveringen.json?size=%s&sort=Nieuwste" % (result_set['mid'], self.__PageSize)
+        url = f"http://m.schooltv.nl/api/v1/programmas/{result_set['mid']}/afleveringen.json?size={self.__PageSize}&sort=Nieuwste"
+
         item = MediaItem(result_set['title'], url)
         item.thumb = result_set.get('image', self.noImage)
         item.description = result_set.get('description', None)
@@ -115,14 +116,11 @@ class Channel(chn_class.Channel):
         """
 
         Logger.info("Performing Pre-Processing")
-        items = []
-
         cat = MediaItem("\b.: Categorie&euml;n :.",
                         "http://m.schooltv.nl/api/v1/categorieen.json?size=100")
         cat.complete = True
         cat.dontGroup = True
-        items.append(cat)
-
+        items = [cat]
         tips = MediaItem("\b.: Tips :.",
                          "http://m.schooltv.nl/api/v1/programmas/tips.json?size=100")
         tips.complete = True
@@ -135,9 +133,11 @@ class Channel(chn_class.Channel):
         ages.dontGroup = True
         for age in ("0-4", "5-6", "7-8", "9-12", "13-15", "16-18"):
             age_item = MediaItem(
-                "%s Jaar" % (age,),
+                f"{age} Jaar",
                 "http://m.schooltv.nl/api/v1/leeftijdscategorieen/%s/afleveringen.json?"
-                "size=%s&sort=Nieuwste" % (age, self.__PageSize))
+                "size=%s&sort=Nieuwste" % (age, self.__PageSize),
+            )
+
             age_item.complete = True
             age_item.dontGroup = True
             ages.items.append(age_item)
@@ -168,7 +168,8 @@ class Channel(chn_class.Channel):
         Logger.trace(result_set)
 
         title = HtmlEntityHelper.url_encode(result_set['title'])
-        url = "http://m.schooltv.nl/api/v1/categorieen/%s/afleveringen.json?sort=Nieuwste&age_filter=&size=%s" % (title, self.__PageSize)
+        url = f"http://m.schooltv.nl/api/v1/categorieen/{title}/afleveringen.json?sort=Nieuwste&age_filter=&size={self.__PageSize}"
+
         item = MediaItem(result_set['title'], url)
         item.thumb = result_set.get('image', self.noImage)
         item.description = "Totaal %(count)s videos" % result_set
@@ -201,7 +202,7 @@ class Channel(chn_class.Channel):
         if from_value + size_value < total_results:
             more_pages = LanguageHelper.get_localized_string(LanguageHelper.MorePages)
             url = self.parentItem.url.split('?')[0]
-            url = "%s?size=%s&from=%s&sort=Nieuwste" % (url, size_value, from_value+size_value)
+            url = f"{url}?size={size_value}&from={from_value + size_value}&sort=Nieuwste"
             Logger.debug("Adding next-page item from %s to %s", from_value + size_value, from_value + size_value + size_value)
 
             next_page = MediaItem(more_pages, url)

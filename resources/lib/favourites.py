@@ -64,7 +64,7 @@ class Favourites:
 
         """
 
-        path_mask = os.path.join(self.FavouriteFolder, "*-%s.xotfav" % (item.guid, ))
+        path_mask = os.path.join(self.FavouriteFolder, f"*-{item.guid}.xotfav")
 
         Logger.debug("Removing favourites for mask: %s", path_mask)
         for fav in glob.glob(path_mask):
@@ -85,7 +85,7 @@ class Favourites:
         favs = []
 
         if channel:
-            path_mask = os.path.join(self.FavouriteFolder, "%s-*.xotfav" % (channel.guid,))
+            path_mask = os.path.join(self.FavouriteFolder, f"{channel.guid}-*.xotfav")
         else:
             path_mask = os.path.join(self.FavouriteFolder, "*.xotfav")
 
@@ -114,8 +114,7 @@ class Favourites:
             Logger.error("Invalid shortcut: %s", full_path)
             return None
 
-        item = self.__load_favourite(full_path)
-        return item
+        return self.__load_favourite(full_path)
 
     def __load_favourite(self, fav, channel=None):
         """
@@ -174,7 +173,7 @@ class Favourites:
 
         # add the channel name
         if channel is None:
-            item.name = "%s [%s]" % (item.name, channel_name)
+            item.name = f"{item.name} [{channel_name}]"
 
         item.clear_date()
         item.actionUrl = action_url % (pickle,)

@@ -410,20 +410,18 @@ class Channel(chn_class.Channel):
             item = self.create_api_teaser_type(result_set)
         elif api_type == "Genre":
             item = self.create_api_genre_type(result_set)
-        elif api_type == "TvShow" or api_type == "KidsTvShow":
+        elif api_type in ["TvShow", "KidsTvShow"]:
             item = self.create_api_tvshow_type(result_set)
 
-        # Search Result
         elif api_type == "SearchPageHit":
             # item = self.create_api_typed_item(result_set["item"], add_parent_title=True)
             item = self.create_api_search_hit(result_set)
 
-        # Video items
         elif api_type == "Single":
             item = self.create_api_single_type(result_set)
-        elif api_type == "Clip" or api_type == "Trailer":
+        elif api_type in ["Clip", "Trailer"]:
             item = self.create_api_clip_type(result_set)
-        elif api_type == "Episode" or api_type == "Variant":
+        elif api_type in ["Episode", "Variant"]:
             item = self.create_api_episode_type(result_set, add_parent_title)
         else:
             Logger.warning("Missing type: %s", api_type)
@@ -455,8 +453,7 @@ class Channel(chn_class.Channel):
         item.isGeoLocked = result_set.get('restrictions', {}).get('onlyAvailableInSweden', False)
         item.description = result_set.get('longDescription')
 
-        image_info = result_set.get("image")
-        if image_info:
+        if image_info := result_set.get("image"):
             item.thumb = self.__get_thumb(image_info, width=720)
             item.fanart = self.__get_thumb(image_info)
         return item
@@ -487,8 +484,7 @@ class Channel(chn_class.Channel):
         item.tv_show_title = item.name
         item.isGeoLocked = result_set.get('restrictions', {}).get('onlyAvailableInSweden', False)
         item.description = result_set.get('description')
-        image_info = result_set.get("image")
-        if image_info:
+        if image_info := result_set.get("image"):
             item.thumb = self.__get_thumb(image_info)
         return item
 
@@ -559,7 +555,7 @@ class Channel(chn_class.Channel):
         new_result_set["name"] = title
         # We need to get rid of some subheadings for which we already have information elsewhere.
         if bool(sub_heading):
-            new_result_set["name"] = "{} - {}".format(title, sub_heading)
+            new_result_set["name"] = f"{title} - {sub_heading}"
             # See if we need to filter out some of the headings? Defaults to True
             if self.parentItem.metaData.get(self.__filter_subheading, True) and (
                     "Idag" in sub_heading
@@ -578,11 +574,9 @@ class Channel(chn_class.Channel):
             new_result_set["longDescription"] = result_set.get("description")
 
         if "images" in result_set:
-            images = result_set.get("images", {}).get("wide")
-            if images:
+            if images := result_set.get("images", {}).get("wide"):
                 new_result_set["image"] = images
-        item = self.create_api_typed_item(result_set["item"])
-        return item
+        return self.create_api_typed_item(result_set["item"])
 
     def create_api_episode_type(self, result_set, add_parent_title=False):
         """ Creates a MediaItem of type 'video' using the result_set from the API.
@@ -610,17 +604,18 @@ class Channel(chn_class.Channel):
         if not self.__show_videos:
             return None
 
-        svt_video_id = result_set.get("videoSvtId", result_set.get("svtId", None))
-        if svt_video_id:
+        if svt_video_id := result_set.get(
+            "videoSvtId", result_set.get("svtId", None)
+        ):
             # API style
-            url = "https://api.svt.se/videoplayer-api/video/{}".format(svt_video_id)
+            url = f"https://api.svt.se/videoplayer-api/video/{svt_video_id}"
         else:
             # HTML style
-            url = "{}{}".format(self.baseUrl, result_set['urls']['svtplay'])
+            url = f"{self.baseUrl}{result_set['urls']['svtplay']}"
 
         title = result_set.get("name", "")
         if "parent" in result_set and add_parent_title:
-            title = "{} - {}".format(result_set["parent"]["name"], title)
+            title = f'{result_set["parent"]["name"]} - {title}'
 
         item = MediaItem(title, url)
         item.description = result_set.get("longDescription")
@@ -635,27 +630,26 @@ class Channel(chn_class.Channel):
             item.thumb = self.__get_thumb(result_set["image"], width=720)
 
         valid_from = result_set.get("validFrom", None)
-        if bool(valid_from) and valid_from.endswith("Z"):
-            # We need to change the timezone
-            valid_from_date = DateHelper.get_datetime_from_string(valid_from[:-1], time_zone="UTC")
-            valid_from_date = valid_from_date.astimezone(self.__timezone)
-            item.set_date(valid_from_date.year, valid_from_date.month, valid_from_date.day,
-                          valid_from_date.hour, valid_from_date.minute, valid_from_date.second)
-        elif bool(valid_from):
-            # Remove the Timezone information
-            valid_from = valid_from.split("+")[0]
-            valid_from_date = DateHelper.get_date_from_string(valid_from, "%Y-%m-%dT%H:%M:%S")
-            item.set_date(*valid_from_date[0:6])
+        if bool(valid_from):
+            if valid_from.endswith("Z"):
+                # We need to change the timezone
+                valid_from_date = DateHelper.get_datetime_from_string(valid_from[:-1], time_zone="UTC")
+                valid_from_date = valid_from_date.astimezone(self.__timezone)
+                item.set_date(valid_from_date.year, valid_from_date.month, valid_from_date.day,
+                              valid_from_date.hour, valid_from_date.minute, valid_from_date.second)
+            else:
+                # Remove the Timezone information
+                valid_from = valid_from.split("+")[0]
+                valid_from_date = DateHelper.get_date_from_string(valid_from, "%Y-%m-%dT%H:%M:%S")
+                item.set_date(*valid_from_date[:6])
 
-        valid_to = result_set.get("validTo", None)
-        if valid_to:
+        if valid_to := result_set.get("validTo", None):
             self.__set_expire_time(valid_to, item)
 
-        live_data = result_set.get("live")
-        if live_data:
+        if live_data := result_set.get("live"):
             is_live_now = live_data["liveNow"]
             if is_live_now:
-                item.name = "{} [COLOR gold](live)[/COLOR]".format(item.name)
+                item.name = f"{item.name} [COLOR gold](live)[/COLOR]"
 
             start = live_data["start"]
             if start.endswith("Z"):
@@ -668,7 +662,7 @@ class Channel(chn_class.Channel):
             else:
                 start = start.split('.')[0].split("+")[0]
                 start_time = DateHelper.get_date_from_string(start, "%Y-%m-%dT%H:%M:%S")
-                item.set_date(*start_time[0:6])
+                item.set_date(*start_time[:6])
                 hour = start_time.tm_hour
                 minute = start_time.tm_min
 
@@ -680,7 +674,7 @@ class Channel(chn_class.Channel):
             Logger.debug("Found season info: %s", season_info)
             try:
                 episode_info = season_info.split(" ")
-                if not len(episode_info) == 5:
+                if len(episode_info) != 5:
                     return item
 
                 item.set_season_info(episode_info[1], episode_info[4])
@@ -717,14 +711,13 @@ class Channel(chn_class.Channel):
             return None
 
         title = result_set['name']
-        url = '{}{}'.format(self.baseUrl, result_set['urls']['svtplay'])
+        url = f"{self.baseUrl}{result_set['urls']['svtplay']}"
 
         item = MediaItem(title, url)
         item.media_type = mediatype.VIDEO
         item.description = result_set.get('longDescription')
 
-        image_info = result_set.get("image")
-        if image_info:
+        if image_info := result_set.get("image"):
             item.thumb = self.__get_thumb(image_info, width=720)
             item.fanart = self.__get_thumb(image_info)
         item.isGeoLocked = result_set['restrictions']['onlyAvailableInSweden']
@@ -759,25 +752,22 @@ class Channel(chn_class.Channel):
         if not self.__show_videos:
             return None
 
-        if not self.__show_videos:
-            return None
-
         title = result_set['name']
-        svt_video_id = result_set.get("videoSvtId", result_set.get("svtId", None))
-        if svt_video_id:
+        if svt_video_id := result_set.get(
+            "videoSvtId", result_set.get("svtId", None)
+        ):
             # API style
-            url = "https://api.svt.se/videoplayer-api/video/{}".format(svt_video_id)
+            url = f"https://api.svt.se/videoplayer-api/video/{svt_video_id}"
         else:
             # HTML style
-            url = "{}{}".format(self.baseUrl, result_set['urls']['svtplay'])
+            url = f"{self.baseUrl}{result_set['urls']['svtplay']}"
 
         item = MediaItem(title, url)
         item.media_type = mediatype.VIDEO
         item.description = result_set.get('longDescription')
         item.isGeoLocked = result_set['restrictions']['onlyAvailableInSweden']
 
-        image_info = result_set.get("image")
-        if image_info:
+        if image_info := result_set.get("image"):
             item.thumb = self.__get_thumb(image_info)
 
         duration = int(result_set.get("duration", 0))
@@ -987,9 +977,9 @@ class Channel(chn_class.Channel):
             #     title, description)
 
         channel_item = MediaItem(
-            title,
-            "https://www.svt.se/videoplayer-api/video/%s" % (channel_id.lower(),)
+            title, f"https://www.svt.se/videoplayer-api/video/{channel_id.lower()}"
         )
+
         channel_item.media_type = mediatype.VIDEO
         channel_item.isLive = True
         channel_item.isGeoLocked = True
@@ -997,8 +987,8 @@ class Channel(chn_class.Channel):
 
         channel_item.thumb = thumb
         if "episodeThumbnailIds" in channel and channel["episodeThumbnailIds"]:
-            channel_item.thumb = "https://www.svtstatic.se/image/wide/650/%s.jpg" % (
-                channel["episodeThumbnailIds"][0],)
+            channel_item.thumb = f'https://www.svtstatic.se/image/wide/650/{channel["episodeThumbnailIds"][0]}.jpg'
+
         return channel_item
 
     def search_site(self, url=None):  # @UnusedVariable
@@ -1065,12 +1055,12 @@ class Channel(chn_class.Channel):
             channel_tag = channel_data["urlName"]
             # find the corresponding episode
             channel_list[channel_tag] = channel_data
-            
+
         programs = dict([kv for kv in json_data.get_value("guidePage", "programs").items() if kv[1].get("isActiveBroadcast", False)])
         schedules = json_data.get_value("guidePage", "schedules")
         for channel_name, program_ids in schedules.items():
             channel_tag = channel_name.split(":")[0]
-            channel = channel_list.get(channel_tag, None)
+            channel = channel_list.get(channel_tag)
             if channel is None:
                 continue
 
@@ -1151,7 +1141,7 @@ class Channel(chn_class.Channel):
 
         data = UriHandler.open(item.url)
         video_id = Regexer.do_regex(r'play-button"[^>]+href="/video/[^?]+\?id=([^"]+)', data)[0]
-        item.url = "https://api.svt.se/video/{}".format(video_id)
+        item.url = f"https://api.svt.se/video/{video_id}"
         return self.update_video_api_item(item)
 
     def __set_expire_time(self, expire_date, item):
@@ -1186,8 +1176,7 @@ class Channel(chn_class.Channel):
         :rtype: str
         """
 
-        return "https://www.svtstatic.se/image/wide/{}/{}/{}?quality=70".format(
-            width, thumb_data["id"], thumb_data["changed"])
+        return f'https://www.svtstatic.se/image/wide/{width}/{thumb_data["id"]}/{thumb_data["changed"]}?quality=70'
 
     def __extract_json_data(self, data, root):
         """ Performs pre-process actions for data processing
@@ -1222,14 +1211,9 @@ class Channel(chn_class.Channel):
 
         variables = HtmlEntityHelper.url_encode(JsonHelper.dump(variables, pretty_print=False))
 
-        url = "https://api.svt.se/contento/graphql?" \
-              "ua=svtplaywebb-play-render-prod-client&" \
-              "operationName={}&" \
-              "variables={}&" \
-              "extensions={}".format(operation, variables, extensions)
-        return url
+        return f"https://api.svt.se/contento/graphql?ua=svtplaywebb-play-render-prod-client&operationName={operation}&variables={variables}&extensions={extensions}"
 
-    def __update_item_from_video_references(self, item, videos, subtitles=None):  # NOSONAR
+    def __update_item_from_video_references(self, item, videos, subtitles=None):    # NOSONAR
         """
 
         :param MediaItem item:      The original MediaItem that needs updating.
@@ -1281,7 +1265,7 @@ class Channel(chn_class.Channel):
             elif "m3u8" in url:
                 alt_index = url.find("m3u8?")
                 if alt_index > 0:
-                    url = url[0:alt_index + 4]
+                    url = url[:alt_index + 4]
 
                 if "-fmp4.m3u8" in url or "-lowbw.m3u8" in url:
                     Logger.trace("Ignoring: %s", url)
@@ -1308,9 +1292,7 @@ class Channel(chn_class.Channel):
             for sub in subtitles:
                 sub_format = sub["format"].lower()
                 url = sub["url"]
-                if sub_format == "websrt":
-                    sub_url = url
-                elif sub_format == "webvtt":
+                if sub_format in ["websrt", "webvtt"]:
                     sub_url = url
                 else:
                     # look for more

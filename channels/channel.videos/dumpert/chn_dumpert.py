@@ -59,12 +59,18 @@ class Channel(chn_class.Channel):
         items = []
         url_pattern = "https://api-live.dumpert.nl/mobile_api/json/video/%s/%s/"
 
-        for page in range(0, 2):
-            item = MediaItem("Toppertjes - Pagina %s" % (page + 1, ), url_pattern % ('toppers', page))
+        for page in range(2):
+            item = MediaItem(
+                f"Toppertjes - Pagina {page + 1}", url_pattern % ('toppers', page)
+            )
+
             items.append(item)
 
-        for page in range(0, 10):
-            item = MediaItem("Filmpjes - Pagina %s" % (page + 1, ), url_pattern % ('latest', page))
+        for page in range(10):
+            item = MediaItem(
+                f"Filmpjes - Pagina {page + 1}", url_pattern % ('latest', page)
+            )
+
             items.append(item)
 
         item = MediaItem("Zoeken", "searchSite")
@@ -72,7 +78,7 @@ class Channel(chn_class.Channel):
 
         return data, items
 
-    def create_json_video_item(self, result_set):  # NOSONAR
+    def create_json_video_item(self, result_set):    # NOSONAR
         """ Creates a MediaItem of type 'video' using the result_set from the regex.
 
         This method creates a new MediaItem from the Regular Expression or Json
@@ -118,7 +124,7 @@ class Channel(chn_class.Channel):
                         item.add_stream(uri, 1000)
                     elif video_type == "720p":
                         item.add_stream(uri, 1200)
-                    elif video_type == "1080p" or video_type == "original":
+                    elif video_type in ["1080p", "original"]:
                         item.add_stream(uri, 1600)
                     elif video_type == "tablet":
                         item.add_stream(uri, 800)
@@ -126,7 +132,7 @@ class Channel(chn_class.Channel):
                         item.add_stream(uri, 450)
                     elif video_type == "embed" and uri.startswith("youtube"):
                         embed_type, youtube_id = uri.split(":")
-                        url = "https://www.youtube.com/watch?v=%s" % (youtube_id, )
+                        url = f"https://www.youtube.com/watch?v={youtube_id}"
                         for s, b in YouTube.get_streams_from_you_tube(url):
                             item.complete = True
                             item.add_stream(s, b)

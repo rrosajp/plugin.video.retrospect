@@ -29,14 +29,12 @@ class Channel(chn_class.Channel):
 
         chn_class.Channel.__init__(self, channel_info)
 
-        # ============== Actual channel setup STARTS here and should be overwritten from derived classes ===============
-        if self.channelCode == "sporza":
-            self.noImage = "sporzaimage.jpg"
-            self.mainListUri = "http://sporza.be/cm/sporza/videozone"
-            self.baseUrl = "http://sporza.be"
-        else:
+        if self.channelCode != "sporza":
             raise IndexError("Invalid Channel Code")
 
+        self.noImage = "sporzaimage.jpg"
+        self.mainListUri = "http://sporza.be/cm/sporza/videozone"
+        self.baseUrl = "http://sporza.be"
         # elif self.channelCode == "ketnet":
         #     self.noImage = "ketnetimage.png"
         #     self.mainListUri = "http://video.ketnet.be/cm/ketnet/ketnet-mediaplayer"
@@ -48,7 +46,7 @@ class Channel(chn_class.Channel):
         #     self.baseUrl = "http://www.cobra.be"
 
         # setup the urls
-        self.swfUrl = "%s/html/flash/common/player.5.10.swf" % (self.baseUrl,)
+        self.swfUrl = f"{self.baseUrl}/html/flash/common/player.5.10.swf"
 
         # setup the main parsing data
         episode_regex = r'<li[^>]*>\W*<a href="(/cm/[^"]+/videozone/programmas/[^"]+)" ' \
@@ -104,13 +102,10 @@ class Channel(chn_class.Channel):
 
         """
 
-        # Only get the first bit
-        items = []
-
         item = MediaItem("\a.: Live :.", "http://sporza.be/cm/sporza/matchcenter/mc_livestream")
         item.dontGroup = True
         item.complete = False
-        items.append(item)
+        items = [item]
         return data, items
 
     def create_live_channel(self, result_set):
@@ -144,7 +139,7 @@ class Channel(chn_class.Channel):
 
         thumb = result_set[4]
         if not thumb.startswith("http"):
-            thumb = "%s%s" % (self.baseUrl, thumb)
+            thumb = f"{self.baseUrl}{thumb}"
         item.thumb = thumb
 
         return item
@@ -163,7 +158,7 @@ class Channel(chn_class.Channel):
 
         """
 
-        url = "%s%s" % (self.baseUrl, result_set[0])
+        url = f"{self.baseUrl}{result_set[0]}"
         name = result_set[1]
 
         item = MediaItem(name.capitalize(), url)
@@ -189,7 +184,7 @@ class Channel(chn_class.Channel):
 
         Logger.info("Performing Pre-Processing")
         items = []
-        data = data[0:data.find('<div class="splitter split24">')]
+        data = data[:data.find('<div class="splitter split24">')]
         Logger.debug("Pre-Processing finished")
         return data, items
 
@@ -214,7 +209,7 @@ class Channel(chn_class.Channel):
 
         Logger.trace(result_set)
 
-        url = "%s%s" % (self.baseUrl, result_set["url"])
+        url = f'{self.baseUrl}{result_set["url"]}'
         if self.parentItem.url not in url:
             return None
 
@@ -223,7 +218,7 @@ class Channel(chn_class.Channel):
         thumb = result_set["thumburl"]
 
         if thumb and not thumb.startswith("http://"):
-            thumb = "%s%s" % (self.baseUrl, thumb)
+            thumb = f"{self.baseUrl}{thumb}"
 
         item = MediaItem(name, url)
         item.thumb = thumb
@@ -343,7 +338,7 @@ class Channel(chn_class.Channel):
                 flv_path = url[2]
 
                 if url[0] == "rtmp-server":
-                    flv = "%s//%s" % (flv_server, flv_path)
+                    flv = f"{flv_server}//{flv_path}"
                     bitrate = 750
 
                 elif url[0] == "rtmpt-server":
@@ -354,9 +349,9 @@ class Channel(chn_class.Channel):
                     #bitrate = 1500
 
                 elif url[0] == "iphone-server":
-                    flv = "%s/%s" % (flv_server, flv_path)
+                    flv = f"{flv_server}/{flv_path}"
                     if not flv.endswith("playlist.m3u8"):
-                        flv = "%s/playlist.m3u8" % (flv,)
+                        flv = f"{flv}/playlist.m3u8"
 
                     for s, b in M3u8.get_streams_from_m3u8(flv):
                         item.complete = True
@@ -365,11 +360,11 @@ class Channel(chn_class.Channel):
                     continue
 
                 elif url[0] == "mobile-server":
-                    flv = "%s/%s" % (flv_server, flv_path)
+                    flv = f"{flv_server}/{flv_path}"
                     bitrate = 250
 
                 else:
-                    flv = "%s/%s" % (flv_server, flv_path)
+                    flv = f"{flv_server}/{flv_path}"
                     bitrate = 0
 
             item.add_stream(flv, bitrate)

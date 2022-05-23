@@ -13,7 +13,7 @@ class M3u8(object):
         pass
 
     @staticmethod
-    def get_subtitle(url, play_list_data=None, append_query_string=True, language=None):  # NOSONAR
+    def get_subtitle(url, play_list_data=None, append_query_string=True, language=None):    # NOSONAR
         """ Retrieves a subtitle url either from a M3u8 file via HTTP or alternatively from a
         M3u8 playlist string value (in case it was already retrieved).
 
@@ -56,19 +56,20 @@ class M3u8(object):
                 if not base_url_logged:
                     Logger.debug("Using base_url %s for M3u8", base_url)
                     base_url_logged = True
-                sub = "%s/%s" % (base_url, n[url_index])
+                sub = f"{base_url}/{n[url_index]}"
             else:
                 if not base_url_logged:
                     Logger.debug("Full url found in M3u8")
                     base_url_logged = True
                 sub = n[url_index]
 
-            if qs is not None and sub.endswith("?null="):
-                sub = sub.replace("?null=", "?%s" % (qs, ))
-            elif qs is not None and "?" in sub:
-                sub = "%s&%s" % (sub, qs)
-            elif qs is not None:
-                sub = "%s?%s" % (sub, qs)
+            if qs is not None:
+                if sub.endswith("?null="):
+                    sub = sub.replace("?null=", f"?{qs}")
+                elif "?" in sub:
+                    sub = f"{sub}&{qs}"
+                else:
+                    sub = f"{sub}?{qs}"
 
         return sub
 
@@ -184,7 +185,7 @@ class M3u8(object):
             for s, b, a in M3u8.get_streams_from_m3u8(url, map_audio=True):
                 if a:
                     audio_part = a.rsplit("-", 1)[-1]
-                    audio_part = "-%s" % (audio_part,)
+                    audio_part = f"-{audio_part}"
                     s = s.replace(".m3u8", audio_part)
                 item.add_stream(s, b)
                 complete = True
@@ -247,17 +248,15 @@ class M3u8(object):
             needles = Regexer.do_regex(audio_needle, data)
             needle = r'(#\w[^:]+)[^\n]+BANDWIDTH=(\d+)\d{3}(?:[^\r\n]*AUDIO="([^"]+)"){0,1}[^\n]*\W+([^\n]+.m3u8[^\n\r]*)'
             needles += Regexer.do_regex(needle, data)
-            type_index = 0
-            bitrate_index = 1
             id_index = 2
             url_index = 3
         else:
             needle = r"(#\w[^:]+)[^\n]+BANDWIDTH=(\d+)\d{3}[^\n]*\W+([^\n]+.m3u8[^\n\r]*)"
             needles = Regexer.do_regex(needle, data)
-            type_index = 0
-            bitrate_index = 1
             url_index = 2
 
+        type_index = 0
+        bitrate_index = 1
         audio_streams = {}
         base_url_logged = False
         base_url = base[:base.rindex("/")]
@@ -272,7 +271,7 @@ class M3u8(object):
                 if not base_url_logged:
                     Logger.debug("Using baseUrl %s for M3u8", base_url)
                     base_url_logged = True
-                stream = "%s/%s" % (base_url, n[url_index])
+                stream = f"{base_url}/{n[url_index]}"
             else:
                 if not base_url_logged:
                     Logger.debug("Full url found in M3u8")
@@ -280,12 +279,13 @@ class M3u8(object):
                 stream = n[url_index]
             bitrate = n[bitrate_index]
 
-            if qs is not None and stream.endswith("?null="):
-                stream = stream.replace("?null=", "?%s" % (qs, ))
-            elif qs is not None and "?" in stream:
-                stream = "%s&%s" % (stream, qs)
-            elif qs is not None:
-                stream = "%s?%s" % (stream, qs)
+            if qs is not None:
+                if stream.endswith("?null="):
+                    stream = stream.replace("?null=", f"?{qs}")
+                elif "?" in stream:
+                    stream = f"{stream}&{qs}"
+                else:
+                    stream = f"{stream}?{qs}"
 
             if map_audio and "#EXT-X-MEDIA" in n[type_index]:
                 # noinspection PyUnboundLocalVariable

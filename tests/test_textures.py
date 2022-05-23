@@ -12,9 +12,11 @@ class TestTextures(unittest.TestCase):
         #     glob.glob(os.path.join("", "**", "*.png"), recursive=True)
 
         for root, dirs, files in os.walk("."):
-            for filename in files:
-                if filename.endswith(".jpg") or filename.endswith("*.png"):
-                    images.append(os.path.join(root, filename))
+            images.extend(
+                os.path.join(root, filename)
+                for filename in files
+                if filename.endswith(".jpg") or filename.endswith("*.png")
+            )
 
         self.assertGreater(len(images), 0)
 

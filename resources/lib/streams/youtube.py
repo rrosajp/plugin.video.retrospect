@@ -99,5 +99,6 @@ class YouTube(object):
 
         if "youtube" in url:
             Logger.debug("Determining Add-on URL for YouTube: %s", url)
-            url = "plugin://plugin.video.youtube/?path=/root/video&action=play_video&videoid=%s" % (url.split("v=")[1], )
+            url = f'plugin://plugin.video.youtube/?path=/root/video&action=play_video&videoid={url.split("v=")[1]}'
+
         return url

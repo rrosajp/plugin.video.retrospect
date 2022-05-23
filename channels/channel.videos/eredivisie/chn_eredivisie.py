@@ -98,13 +98,10 @@ class Channel(chn_class.Channel):
             return data, []
 
         current_page = current_pages[0]
-        items = []
-
-        url = "%s/%s/%s" % (current_page[0], int(current_page[1]) + 1, current_page[2])
+        url = f"{current_page[0]}/{int(current_page[1]) + 1}/{current_page[2]}"
         page_item = MediaItem(LanguageHelper.get_localized_string(LanguageHelper.MorePages), url)
         page_item.dontGroup = True
-        items.append(page_item)
-
+        items = [page_item]
         return data, items
 
     def create_folder_item(self, result_set):
@@ -125,16 +122,16 @@ class Channel(chn_class.Channel):
 
         if result_set["Type"] == "sport":
             # http://www.foxsports.nl/video/filter/alle/tennis/
-            url = "%s/video/filter/fragments/1/alle/%s/" % (self.baseUrl, result_set["Url"])
+            url = f'{self.baseUrl}/video/filter/fragments/1/alle/{result_set["Url"]}/'
         elif result_set["Type"] == "meest_bekeken":
-            url = "%s/video/filter/fragments/1/meer" % (self.baseUrl, )
+            url = f"{self.baseUrl}/video/filter/fragments/1/meer"
         else:
             # http://www.foxsports.nl/video/filter/samenvattingen/
-            url = "%s/video/filter/fragments/1/%s/" % (self.baseUrl, result_set["Url"])
+            url = f'{self.baseUrl}/video/filter/fragments/1/{result_set["Url"]}/'
 
         title = result_set["Title"]
         if not title[0].isupper():
-            title = "%s%s" % (title[0].upper(), title[1:])
+            title = f"{title[0].upper()}{title[1:]}"
         item = MediaItem(title, url)
         item.complete = True
         return item
@@ -160,7 +157,7 @@ class Channel(chn_class.Channel):
 
         Logger.trace(result_set)
 
-        url = "%s%s" % (self.baseUrl, result_set["Url"])
+        url = f'{self.baseUrl}{result_set["Url"]}'
         item = MediaItem(result_set["Title"], url)
         item.media_type = mediatype.EPISODE
         item.thumb = result_set["Thumb"]
@@ -198,8 +195,12 @@ class Channel(chn_class.Channel):
         # https://www.foxsports.nl/api/video/videodata/2945190
         data = UriHandler.open(item.url, additional_headers=item.HttpHeaders)
         video_id = Regexer.do_regex(r'data-videoid="(\d+)" ', data)[-1]
-        data = UriHandler.open("https://www.foxsports.nl/api/video/videodata/%s" % (video_id,),
-                               additional_headers=item.HttpHeaders, no_cache=True)
+        data = UriHandler.open(
+            f"https://www.foxsports.nl/api/video/videodata/{video_id}",
+            additional_headers=item.HttpHeaders,
+            no_cache=True,
+        )
+
         stream_id = Regexer.do_regex('<uri>([^>]+)</uri>', data)[-1]
 
         # POST https://d3api.foxsports.nl/api/V2/entitlement/tokenize

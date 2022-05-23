@@ -100,8 +100,7 @@ class AddonSettings(object):
         of an AddonSettings class. """
 
         for store_type in (KODI, LOCAL):
-            store = AddonSettings.__setting_stores.pop(store_type, None)
-            if store:
+            if store := AddonSettings.__setting_stores.pop(store_type, None):
                 del store
 
     #endregion
@@ -171,8 +170,7 @@ class AddonSettings(object):
 
         """
 
-        value = AddonSettings.store(store).get_setting(setting_id)
-        return value
+        return AddonSettings.store(store).get_setting(setting_id)
 
     @staticmethod
     def set_setting(setting_id, value, store=KODI):
@@ -379,7 +377,7 @@ class AddonSettings(object):
             return False
 
         # only hide if the regions don't match
-        return not current_geographical_region == channel_region
+        return current_geographical_region != channel_region
     #endregion
 
     #region Language caching
@@ -613,16 +611,16 @@ class AddonSettings(object):
             uname = platform.uname()
             Logger.trace(uname)
             if git:
-                user_agent = "Kodi/%s (%s %s; %s; http://kodi.tv) Version/%s Git:%s" % \
-                             (version, uname[0], uname[2], uname[4], version, git)
+                user_agent = f"Kodi/{version} ({uname[0]} {uname[2]}; {uname[4]}; http://kodi.tv) Version/{version} Git:{git}"
+
             else:
-                user_agent = "Kodi/%s (%s %s; %s; http://kodi.tv) Version/%s" % \
-                             (version, uname[0], uname[2], uname[4], version)
+                user_agent = f"Kodi/{version} ({uname[0]} {uname[2]}; {uname[4]}; http://kodi.tv) Version/{version}"
+
         except:
             Logger.warning("Error setting user agent", exc_info=True)
             current_env = EnvController.get_platform(True)
             # Kodi/14.2 (Windows NT 6.1; WOW64) App_Bitness/32 Version/14.2-Git:20150326-7cc53a9
-            user_agent = "Kodi/%s (%s; <unknown>; http://kodi.tv)" % (version, current_env)
+            user_agent = f"Kodi/{version} ({current_env}; <unknown>; http://kodi.tv)"
 
         # now we store it
         AddonSettings.store(LOCAL).set_setting(AddonSettings.__USER_AGENT_SETTING, user_agent)
@@ -756,8 +754,7 @@ class AddonSettings(object):
 
         """
 
-        setting = AddonSettings.store(KODI).get_setting("folder_prefix", default="")
-        return setting
+        return AddonSettings.store(KODI).get_setting("folder_prefix", default="")
 
     @staticmethod
     def mix_folders_and_videos():
@@ -930,14 +927,14 @@ class AddonSettings(object):
             AddonSettings.__refresh(KODI)
         else:
             # show settings and focus on a tab
-            xbmc.executebuiltin('Addon.OpenSettings(%s)' % (Config.addonId,))
+            xbmc.executebuiltin(f'Addon.OpenSettings({Config.addonId})')
 
             if tab_id:
                 # the 100 range are the tabs
                 # the 200 range are the controls in a tab
                 xbmc.executebuiltin('SetFocus(%i)' % int(tab_id))
                 if setting_id:
-                    xbmc.executebuiltin('SetFocus(%s)' % int(setting_id))
+                    xbmc.executebuiltin(f'SetFocus({int(setting_id)})')
 
             Logger.info("Settings shown with focus on %s-%s", tab_id, setting_id or "<none>")
         return
@@ -1080,7 +1077,7 @@ class AddonSettings(object):
         channel_selection_xml = '        <!-- start of active channels -->\n' \
                                 '        <setting id="config_channel" type="select" label="30040" values="'
         channel_safe_names = "|".join([c.safe_name for c in channels])
-        channel_selection_xml = "%s%s" % (channel_selection_xml, channel_safe_names)
+        channel_selection_xml = f"{channel_selection_xml}{channel_safe_names}"
         channel_selection_xml = '%s" />' % (channel_selection_xml.rstrip("|"),)
 
         # replace the correct parts
@@ -1090,7 +1087,7 @@ class AddonSettings(object):
         return contents
 
     @staticmethod
-    def __update_add_on_settings_with_channel_settings(contents, channels):  # NOSONAR
+    def __update_add_on_settings_with_channel_settings(contents, channels):    # NOSONAR
         """ Adds the channel specific settings
 
         This method first aggregates the settings and then adds them.
@@ -1107,7 +1104,7 @@ class AddonSettings(object):
             Logger.error("No '<!-- begin of channel settings -->' found in settings.xml. Stopping updating.")
             return
 
-        settings = dict()
+        settings = {}
         channels_with_settings = []
 
         # There are 2 settings between the selector list and the channel settings in the settings_template.xml
@@ -1149,12 +1146,11 @@ class AddonSettings(object):
                     setting_xml = '<setting id="%s" %s visible=\"eq(-{0},%s)\" />' % \
                                   (setting_xml_id, setting_value, channel.safe_name)
 
-                existing_setting_xml_index = [i for i, s in
-                                              enumerate(settings[channel.moduleName]) if
-                                              setting_xml_id in s]
-                if not existing_setting_xml_index:
-                    settings[channel.moduleName].append((setting_xml_id, setting_xml))
-                else:
+                if existing_setting_xml_index := [
+                    i
+                    for i, s in enumerate(settings[channel.moduleName])
+                    if setting_xml_id in s
+                ]:
                     xml_index = existing_setting_xml_index[0]
                     # we need to OR the visibility
                     setting_tuple = settings[channel.moduleName][xml_index]
@@ -1162,6 +1158,8 @@ class AddonSettings(object):
                         'visible="', 'visible="eq(-{0},%s)|' % (channel.safe_name,))
                     settings[channel.moduleName][xml_index] = (setting_tuple[0], setting)
 
+                else:
+                    settings[channel.moduleName].append((setting_xml_id, setting_xml))
             # Add it to channels with settings
             channels_with_settings.append(channel)
 
@@ -1208,9 +1206,10 @@ class AddonSettings(object):
         Logger.debug("Found languages: %s", languages)
 
         # get the labels and setting identifiers for those languages
-        language_lookup = dict()
-        for language in languages:
-            language_lookup[language] = AddonSettings.__get_language_settings_id_and_label(language)
+        language_lookup = {
+            language: AddonSettings.__get_language_settings_id_and_label(language)
+            for language in languages
+        }
 
         language_lookup_sorted_keys = sorted(language_lookup.keys(), key=lambda k: k or "")
 
@@ -1266,7 +1265,7 @@ class AddonSettings(object):
         """Prints the settings"""
 
         pattern = "%s\n%s: %s"
-        value = "%s: %s" % ("ClientId", AddonSettings.get_client_id())
+        value = f"ClientId: {AddonSettings.get_client_id()}"
         value = pattern % (value, "MaxStreamBitrate", AddonSettings.get_max_stream_bitrate())
         value = pattern % (value, "Show_subtitles", AddonSettings.show_subtitles())
         value = pattern % (value, "Cache_http_responses", AddonSettings.cache_http_responses())

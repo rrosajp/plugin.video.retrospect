@@ -79,8 +79,6 @@ class Channel(chn_class.Channel):
 
         """
 
-        items = []
-
         # we need to create page items. So let's just spoof the paging. Youtube has
         # a 50 max results per query limit.
         items_per_page = 50
@@ -88,8 +86,10 @@ class Channel(chn_class.Channel):
         xml = xmlhelper.XmlHelper(data)
         nr_items = xml.get_single_node_content("openSearch:totalResults")
 
-        for index in range(1, int(nr_items), items_per_page):
-            items.append(self.create_episode_item([index, items_per_page]))
+        items = [
+            self.create_episode_item([index, items_per_page])
+            for index in range(1, int(nr_items), items_per_page)
+        ]
 
         # Continue working normal!
         return data, items
@@ -108,8 +108,8 @@ class Channel(chn_class.Channel):
 
         """
 
-        url = "http://gdata.youtube.com/feeds/api/users/hardwareinfovideo/uploads?max-results=%s&start-index=%s" % (
-            result_set[1], result_set[0])
+        url = f"http://gdata.youtube.com/feeds/api/users/hardwareinfovideo/uploads?max-results={result_set[1]}&start-index={result_set[0]}"
+
         title = "Hardware Info TV %04d-%04d" % (result_set[0], result_set[0] + result_set[1])
         item = MediaItem(title, url)
         item.complete = True
@@ -144,13 +144,13 @@ class Channel(chn_class.Channel):
         video_id = video_id[last_slash:]
         # The old url does no longer work:
         # url = "http://www.youtube.com/get_video_info?hl=en_GB&asv=3&video_id=%s" % (videoId,)
-        url = "http://www.youtube.com/watch?v=%s" % (video_id, )
+        url = f"http://www.youtube.com/watch?v={video_id}"
 
         item = MediaItem(title, url, media_type=mediatype.EPISODE)
 
         # date stuff
         date = xml_data.get_single_node_content("published")
-        year = date[0:4]
+        year = date[:4]
         month = date[5:7]
         day = date[8:10]
         hour = date[11:13]

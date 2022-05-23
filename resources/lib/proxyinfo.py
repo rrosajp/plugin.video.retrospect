@@ -31,15 +31,16 @@ class ProxyInfo(object):
         """
 
         if self.Scheme.lower() == "dns":
-            return "%s://%s" % (self.Scheme, self.Proxy)
+            return f"{self.Scheme}://{self.Proxy}"
 
         elif self.__is_secure():
             if hide_password:
-                return "%s://%s:*******@%s:%s" % (self.Scheme, self.Username, self.Proxy, self.Port)
+                return f"{self.Scheme}://{self.Username}:*******@{self.Proxy}:{self.Port}"
             else:
-                return "%s://%s:%s@%s:%s" % (self.Scheme, self.Username, self.Password, self.Proxy, self.Port)
+                return f"{self.Scheme}://{self.Username}:{self.Password}@{self.Proxy}:{self.Port}"
+
         else:
-            return "%s://%s:%s" % (self.Scheme, self.Proxy, self.Port)
+            return f"{self.Scheme}://{self.Proxy}:{self.Port}"
 
     def use_proxy_for_url(self, url):
         """ Checks whether the URL is allowed based on the proxy filter.
@@ -51,11 +52,7 @@ class ProxyInfo(object):
 
         """
 
-        if not self.Filter:
-            return True
-
-        # if any word in the filterlist appears in the url, use the proxy
-        return any(f in url for f in self.Filter)
+        return any(f in url for f in self.Filter) if self.Filter else True
 
     def __is_secure(self):
         """ An easy way of determining if this server should use proxy authentication.
@@ -65,7 +62,7 @@ class ProxyInfo(object):
 
         """
 
-        return not self.Username == ""
+        return self.Username != ""
 
     def __str__(self):
         """ String representation
@@ -78,4 +75,4 @@ class ProxyInfo(object):
         if self.Proxy == "":
             return "Proxy Default Override."
 
-        return "Proxy (%s): %s" % (self.Scheme, self.get_proxy_address(True))
+        return f"Proxy ({self.Scheme}): {self.get_proxy_address(True)}"

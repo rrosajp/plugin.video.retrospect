@@ -230,8 +230,7 @@ class VideoAction(AddonAction):
             firstaired=item.get_date()
         )
 
-        duration = item.get_info_label("duration")
-        if duration:
+        if duration := item.get_info_label("duration"):
             result["runtime"] = duration
 
         if item.poster:

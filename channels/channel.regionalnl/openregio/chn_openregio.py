@@ -246,8 +246,7 @@ class Channel(chn_class.Channel):
         item.thumb = result_set.get("image", result_set.get("imageLink"))
         item.description = HtmlHelper.to_text(result_set.get("text"))
 
-        posix = result_set.get("timestamp", None)
-        if posix:
+        if posix := result_set.get("timestamp", None):
             broadcast_date = DateHelper.get_date_from_posix(int(posix))
             item.set_date(broadcast_date.year,
                           broadcast_date.month,

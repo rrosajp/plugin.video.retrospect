@@ -132,14 +132,11 @@ class Channel(chn_class.Channel):
         """
 
         Logger.info("Performing Pre-Processing")
-        items = []
-
         title = "\a.: %s :." % (self.searchInfo.get(self.language, self.searchInfo["se"])[1], )
         Logger.trace("Adding search item: %s", title)
         search_item = MediaItem(title, "searchSite")
         search_item.dontGroup = True
-        items.append(search_item)
-
+        items = [search_item]
         Logger.debug("Pre-Processing finished")
         return data, items
 
@@ -207,7 +204,7 @@ class Channel(chn_class.Channel):
 
                 if a and "-audio" not in s:
                     video_part = s.rsplit("-", 1)[-1]
-                    video_part = "-%s" % (video_part,)
+                    video_part = f"-{video_part}"
                     s = a.replace(".m3u8", video_part)
                 item.add_stream(s, b)
                 item.complete = True
@@ -248,4 +245,4 @@ class Channel(chn_class.Channel):
         search_info = self.searchInfo.get(self.language, None)
         if search_info is None:
             search_info = self.searchInfo["se"]
-        return "%s/%s" % (self.baseUrl, search_info[0])
+        return f"{self.baseUrl}/{search_info[0]}"

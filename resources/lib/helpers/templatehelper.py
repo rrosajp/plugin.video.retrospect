@@ -62,7 +62,10 @@ class TemplateHelper(object):
         """
 
         if self.__settingsIndex[category_id].count(reference_id) > 1:
-            raise ValueError("Multiple reference setting indexes found for %s." % (reference_id,))
+            raise ValueError(
+                f"Multiple reference setting indexes found for {reference_id}."
+            )
+
 
         if self.__settingsIndex[category_id].count(setting_id) > 1:
             self.__logger.warning("Multiple values found for %s, using #%s", setting_id, skip)
@@ -91,11 +94,11 @@ class TemplateHelper(object):
         # The old way:
         # setting_indexes = filter(lambda s: s == setting_id, settings_in_category)
         if not setting_indexes:
-            raise ValueError("No settings found for %s" % (setting_id,))
+            raise ValueError(f"No settings found for {setting_id}")
 
         index = 0
         index_start = 0
-        for i in range(0, skip + 1):
+        for i in range(skip + 1):
             # start one after the current index (but then we need to add +1 to the found index)
             index += settings_in_category[index_start:].index(setting_id)
             if i > 0:

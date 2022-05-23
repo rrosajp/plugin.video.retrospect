@@ -33,12 +33,9 @@ class HtmlHelper(taghelperbase.TagHelperBase):
 
         """
         
-        first_only = True
-        if "first_only" in kwargs:
-            first_only = kwargs["first_only"]
+        first_only = kwargs["first_only"] if "first_only" in kwargs else True
+        html_regex = f"<{tag}"
 
-        html_regex = "<%s" % (tag,)
-                
         for arg in args:
             name = list(arg.keys())[0]
             value = arg[list(arg.keys())[0]]
@@ -52,10 +49,7 @@ class HtmlHelper(taghelperbase.TagHelperBase):
         html_regex += "[^>]*>([^<]+)</"
         result = Regexer.do_regex(html_regex, self.data)
         if len(result) > 0:
-            if first_only:
-                return result[0].strip()
-            else:
-                return result
+            return result[0].strip() if first_only else result
         else:
             return ""
 

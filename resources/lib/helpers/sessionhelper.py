@@ -74,25 +74,28 @@ class SessionHelper(object):
                 with io.open(SessionHelper.__get_session_path(), mode='r', encoding='utf-8') as fd:
                     log_level = fd.readline()
 
-                if not log_level == "":
-                    # logger.Trace("Found previous loglevel: %s vs current: %s", logLevel, logger.minLogLevel)
-                    new_log_level_found = not logger.minLogLevel == int(log_level)
-                else:
-                    new_log_level_found = False
+                new_log_level_found = (
+                    False
+                    if log_level == ""
+                    else logger.minLogLevel != int(log_level)
+                )
+
             except:
                 logger.error("Error determining previous loglevel", exc_info=True)
                 new_log_level_found = False
         else:
             new_log_level_found = False
 
-        if logger and new_log_level_found:
-            logger.debug("Found active session at '%s' with an old loglevel '%s' vs '%s', resetting session",
-                         SessionHelper.__get_session_path(), log_level, logger.minLogLevel)
-            modified_in_last_hours = False
+        if new_log_level_found:
+            if logger:
+                logger.debug("Found active session at '%s' with an old loglevel '%s' vs '%s', resetting session",
+                             SessionHelper.__get_session_path(), log_level, logger.minLogLevel)
+                modified_in_last_hours = False
 
-        elif logger and modified_in_last_hours:
-            logger.debug("Found active session at '%s' which was modified %.2f minutes (%.2f hours) ago",
-                         SessionHelper.__get_session_path(), (now_stamp - time_stamp) / 60, (now_stamp - time_stamp) / 3600.0)
+        elif modified_in_last_hours:
+            if logger:
+                logger.debug("Found active session at '%s' which was modified %.2f minutes (%.2f hours) ago",
+                             SessionHelper.__get_session_path(), (now_stamp - time_stamp) / 60, (now_stamp - time_stamp) / 3600.0)
 
         elif logger:
             logger.debug("Found expired session at '%s' which was modified %.2f minutes (%.2f hours) ago",

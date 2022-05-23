@@ -75,7 +75,7 @@ class Channel(chn_class.Channel):
         json_data = JsonHelper(data)
         dict_items = json_data.get_value("items", fallback=[])
         for item in dict_items:
-            if item == "banners" or item == "curators":
+            if item in ["banners", "curators"]:
                 continue
             items.append(self.create_episode_item(dict_items[item]))
 
@@ -174,9 +174,7 @@ class Channel(chn_class.Channel):
         data = UriHandler.open(url, params=data, additional_headers=item.HttpHeaders)
         Logger.trace(data)
         json_data = JsonHelper(data)
-        url = json_data.get_value("url", fallback=None)
-
-        if url:
+        if url := json_data.get_value("url", fallback=None):
             item.add_stream(url)
             item.Complete = True
         return item

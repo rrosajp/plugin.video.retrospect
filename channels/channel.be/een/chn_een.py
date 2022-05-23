@@ -87,12 +87,10 @@ class Channel(chn_class.Channel):
 
         """
 
-        items = []
         recent = FolderItem("\a .: Recent :.", "https://www.een.be/deze-week", content_type=contenttype.EPISODES)
         recent.complete = True
         recent.dontGroup = True
-        items.append(recent)
-
+        items = [recent]
         data = Regexer.do_regex(r'epgAZ\W+({"data"[\w\W]+?);<', data)[0]
         return data, items
 
@@ -147,7 +145,7 @@ class Channel(chn_class.Channel):
             400: "Karakters",
             413: "Het weer"
         }
-        if result_set["id"] in exclude.keys():
+        if result_set["id"] in exclude:
             return None
 
         # # dummy class
@@ -180,7 +178,7 @@ class Channel(chn_class.Channel):
         if "mediazone.vrt.be" not in item.url:
             # Extract actual media data
             video_id = Regexer.do_regex('data-video=[\'"]([^"\']+)[\'"]', data)[0]
-            url = "https://mediazone.vrt.be/api/v1/een/assets/%s" % (video_id, )
+            url = f"https://mediazone.vrt.be/api/v1/een/assets/{video_id}"
             data = UriHandler.open(url)
 
         json = JsonHelper(data)

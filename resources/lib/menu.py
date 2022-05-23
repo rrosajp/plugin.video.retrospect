@@ -77,7 +77,7 @@ class Menu(ActionParser):
         # channels_to_show = filter(lambda c: c.visible, valid_channels)
 
         selected_channels = [c for c in channels_to_show if c.enabled]
-        selected_indices = list([channels_to_show.index(c) for c in selected_channels])
+        selected_indices = [channels_to_show.index(c) for c in selected_channels]
         Logger.debug("Currently selected channels: %s", selected_indices)
 
         channel_to_show_names = [HtmlEntityHelper.convert_html_entities(c.channelName) for c in channels_to_show]
@@ -158,11 +158,7 @@ class Menu(ActionParser):
         Logger.debug("Adding favourite: %s", item)
 
         f = Favourites(Config.favouriteDir)
-        if item.is_playable:
-            action_value = action.PLAY_VIDEO
-        else:
-            action_value = action.LIST_FOLDER
-
+        action_value = action.PLAY_VIDEO if item.is_playable else action.LIST_FOLDER
         # add the favourite
         f.add(self.channelObject,
               item,
@@ -180,11 +176,7 @@ class Menu(ActionParser):
         Logger.debug("Adding shortcut: %s", item)
 
         f = Favourites(Config.shortcutDir)
-        if item.is_playable:
-            action_value = action.PLAY_VIDEO
-        else:
-            action_value = action.LIST_FOLDER
-
+        action_value = action.PLAY_VIDEO if item.is_playable else action.LIST_FOLDER
         # Ask for a filename
         heading = LanguageHelper.get_localized_string(LanguageHelper.ShortCutName)
         keyboard = xbmc.Keyboard("", heading)
@@ -231,8 +223,7 @@ class Menu(ActionParser):
             self.refresh()
             return
 
-        first_time = c.cloak(item.url)
-        if first_time:
+        if first_time := c.cloak(item.url):
             XbmcWrapper.show_dialog(LanguageHelper.get_localized_string(LanguageHelper.CloakFirstTime),
                                     LanguageHelper.get_localized_string(LanguageHelper.CloakMessage))
 

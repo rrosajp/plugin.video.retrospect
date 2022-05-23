@@ -25,8 +25,10 @@ class NpoStream(object):
 
         """
 
-        sub_title_url = "http://tt888.omroep.nl/tt888/%s" % (stream_id,)
-        return SubtitleHelper.download_subtitle(sub_title_url, stream_id + ".srt", format='srt')
+        sub_title_url = f"http://tt888.omroep.nl/tt888/{stream_id}"
+        return SubtitleHelper.download_subtitle(
+            sub_title_url, f"{stream_id}.srt", format='srt'
+        )
 
     @staticmethod
     def add_mpd_stream_from_npo(url, episode_id, item, headers=None, live=False):
@@ -59,7 +61,7 @@ class NpoStream(object):
             return None
 
         token_headers = {"x-requested-with": "XMLHttpRequest"}
-        token_headers.update(headers or {})
+        token_headers |= (headers or {})
         data = UriHandler.open("https://www.npostart.nl/api/token",
                                additional_headers=token_headers)
         token = JsonHelper(data).get_value("token")
@@ -84,8 +86,7 @@ class NpoStream(object):
         data = UriHandler.open(stream_data_url, additional_headers=headers)
         Logger.trace("Stream Data: %s", data)
         stream_data = JsonHelper(data)
-        error = stream_data.get_value("html")
-        if error:
+        if error := stream_data.get_value("html"):
             error = Regexer.do_regex(r'message">\s*<p[^>]*>([^<]+)', error)
             if bool(error):
                 return error[0]
@@ -95,13 +96,13 @@ class NpoStream(object):
         if stream_url is None:
             return None
 
-        # Encryption?
-        license_url = stream_data.get_value("stream", "keySystemOptions", 0, "options", "licenseUrl")
-        if license_url:
+        if license_url := stream_data.get_value(
+            "stream", "keySystemOptions", 0, "options", "licenseUrl"
+        ):
             Logger.info("Using encrypted Dash for NPO")
             license_headers = stream_data.get_value("stream", "keySystemOptions", 0, "options", "httpRequestHeaders")
             if license_headers:
-                license_headers = '&'.join(["{}={}".format(k, v) for k, v in license_headers.items()])
+                license_headers = '&'.join([f"{k}={v}" for k, v in license_headers.items()])
             license_type = stream_data.get_value("stream", "keySystemOptions", 0, "name")
             license_key = "{0}|{1}|R{{SSM}}|".format(license_url, license_headers or "")
         else:
@@ -111,11 +112,14 @@ class NpoStream(object):
 
         # Actually set the stream
         stream = item.add_stream(stream_url, 0)
-        Mpd.set_input_stream_addon_input(stream,
-                                         headers,
-                                         license_key=license_key,
-                                         license_type=license_type,
-                                         manifest_update=None if not live else "full")
+        Mpd.set_input_stream_addon_input(
+            stream,
+            headers,
+            license_key=license_key,
+            license_type=license_type,
+            manifest_update="full" if live else None,
+        )
+
 
         return None
 
@@ -151,7 +155,7 @@ class NpoStream(object):
         token_json = JsonHelper(token_json_data)
         token = token_json.get_value("token")
 
-        url = "http://ida.omroep.nl/app.php/%s?adaptive=yes&token=%s" % (episode_id, token)
+        url = f"http://ida.omroep.nl/app.php/{episode_id}?adaptive=yes&token={token}"
         stream_data = UriHandler.open(url, additional_headers=headers)
         if not stream_data:
             return []

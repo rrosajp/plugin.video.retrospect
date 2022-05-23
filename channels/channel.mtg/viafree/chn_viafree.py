@@ -264,8 +264,10 @@ class Channel(chn_class.Channel):
         season_folders = json_data.get_value("context", "dispatcher", "stores",
                                              "ContentPageProgramStore", "format", "videos")
         for season in season_folders:
-            for video in season_folders[season]['program']:
-                items.append(self.create_json_video_item(video))
+            items.extend(
+                self.create_json_video_item(video)
+                for video in season_folders[season]['program']
+            )
 
         return data, items
 
@@ -301,7 +303,7 @@ class Channel(chn_class.Channel):
             # 2016-05-20T15:05:00+00:00
             aired_at = aired_at.split("+")[0].rstrip('Z')
             time_stamp = DateHelper.get_date_from_string(aired_at, "%Y-%m-%dT%H:%M:%S")
-            item.set_date(*time_stamp[0:6])
+            item.set_date(*time_stamp[:6])
 
         item.thumb = self.__get_thumb_image(result_set.get("image"))
 
@@ -312,10 +314,7 @@ class Channel(chn_class.Channel):
             Logger.debug("Found premium item, hiding it.")
             return None
 
-        srt = result_set.get("samiPath")
-        if not srt:
-            srt = result_set.get("subtitles_webvtt")
-        if srt:
+        if srt := result_set.get("samiPath") or result_set.get("subtitles_webvtt"):
             Logger.debug("Storing SRT/WebVTT path: %s", srt)
             item.subtitle = srt
         return item
@@ -347,11 +346,11 @@ class Channel(chn_class.Channel):
             # now we determine the ID and load the json data
             data_id = Regexer.do_regex(r'data-format-id="(\d+)"', data)[-1]
             Logger.debug("Found FormatId = %s", data_id)
-            program_url = \
-                "http://playapi.mtgx.tv/v3/videos?format=%s&order=-airdate&type=program" % (data_id,)
+            program_url = f"http://playapi.mtgx.tv/v3/videos?format={data_id}&order=-airdate&type=program"
+
             data = UriHandler.open(program_url)
-            clip_url = \
-                "http://playapi.mtgx.tv/v3/videos?format=%s&order=-updated&type=clip" % (data_id,)
+            clip_url = f"http://playapi.mtgx.tv/v3/videos?format={data_id}&order=-updated&type=clip"
+
 
         if clip_url is not None:
             clip_title = LanguageHelper.get_localized_string(LanguageHelper.Clips)
@@ -374,14 +373,11 @@ class Channel(chn_class.Channel):
         """
 
         Logger.info("Performing Pre-Processing")
-        items = []
-
         title = "\a.: %s :." % (self.searchInfo.get(self.language, self.searchInfo["se"])[1], )
         Logger.trace("Adding search item: %s", title)
         search_item = MediaItem(title, "searchSite")
         search_item.dontGroup = True
-        items.append(search_item)
-
+        items = [search_item]
         Logger.debug("Pre-Processing finished")
         return data, items
 
@@ -484,8 +480,8 @@ class Channel(chn_class.Channel):
             description = "%s\n\n%s" % (summary, description)
 
         video_type = result_set["type"]
-        if not video_type == "program":
-            title = "%s (%s)" % (title, video_type.title())
+        if video_type != "program":
+            title = f"{title} ({video_type.title()})"
 
         elif result_set["format_position"]["is_episodic"]:  # and resultSet["format_position"]["episode"] != "0":
             # make sure we show the episodes and seaso
@@ -497,7 +493,8 @@ class Channel(chn_class.Channel):
 
             # if the name had the episode in it, translate it
             if episode > 0 and season > 0:  # and not webisode:
-                title = "{} {}".format(LanguageHelper.get_localized_string(LanguageHelper.EpisodeId), episode)
+                title = f"{LanguageHelper.get_localized_string(LanguageHelper.EpisodeId)} {episode}"
+
             else:
                 Logger.debug("Found episode '0' or websido '%s': using name instead of episode number", title)
 
@@ -506,19 +503,20 @@ class Channel(chn_class.Channel):
             url = result_set["_links"]["stream"]["href"]
         else:
             # we can use mpx_guid and https://viafree.mtg-api.com/stream-links/viafree/web/se/clear-media-guids/{}/streams
-            url = "https://viafree.mtg-api.com/stream-links/viafree/web/{}/clear-media-guids/{}/streams".format(self.language, mpx_guid)
+            url = f"https://viafree.mtg-api.com/stream-links/viafree/web/{self.language}/clear-media-guids/{mpx_guid}/streams"
+
         item = MediaItem(title, url)
 
         date_info = None
-        date_format = "%Y-%m-%dT%H:%M:%S"
         if "broadcasts" in result_set and len(result_set["broadcasts"]) > 0:
             date_info = result_set["broadcasts"][0]["air_at"]
             Logger.trace("Date set from 'air_at'")
 
             if "playable_from" in result_set["broadcasts"][0]:
                 start_date = result_set["broadcasts"][0]["playable_from"]
-                playable_from = DateHelper.get_date_from_string(start_date[0:-6], date_format)
-                playable_from = datetime.datetime(*playable_from[0:6])
+                date_format = "%Y-%m-%dT%H:%M:%S"
+                playable_from = DateHelper.get_date_from_string(start_date[:-6], date_format)
+                playable_from = datetime.datetime(*playable_from[:6])
                 if playable_from > datetime.datetime.now():
                     drm_locked = True
 
@@ -554,10 +552,9 @@ class Channel(chn_class.Channel):
         if bool(expire_date):
             self.__set_expire_time(expire_date, item)
 
-        srt = result_set.get("sami_path")
-        if not srt:
-            srt = result_set.get("subtitles_webvtt")
-        if srt:
+        if srt := result_set.get("sami_path") or result_set.get(
+            "subtitles_webvtt"
+        ):
             Logger.debug("Storing SRT/WebVTT path: %s", srt)
             item.subtitle = srt
 
@@ -655,8 +652,9 @@ class Channel(chn_class.Channel):
             sub_url = url.rsplit("uri=")[-1]
             sub_url = HtmlEntityHelper.url_decode(sub_url)
             sub_data = UriHandler.open(sub_url)
-            subs = [line for line in sub_data.split("\n") if line.startswith("http")]
-            if subs:
+            if subs := [
+                line for line in sub_data.split("\n") if line.startswith("http")
+            ]:
                 item.subtitle = SubtitleHelper.download_subtitle(subs[0], format='webvtt')
         return
 
@@ -678,7 +676,7 @@ class Channel(chn_class.Channel):
             # in this case we need to specifically set the path
             # url = url.replace('/mp4:', '//') -> don't do this, but specify the path
             server, path = url.split("mp4:", 1)
-            url = "%s playpath=mp4:%s" % (server, path)
+            url = f"{server} playpath=mp4:{path}"
 
         if old_url != url:
             Logger.debug("Updated URL from - to:\n%s\n%s", old_url, url)
@@ -710,7 +708,7 @@ class Channel(chn_class.Channel):
 
         if check_channel and self.channelId is not None:
             channels = [int(c["guid"]) for c in result_set.get("channels", [])]
-            valid_channel_found = any([c for c in channels if c in self.channelId])
+            valid_channel_found = any(c for c in channels if c in self.channelId)
             if not valid_channel_found:
                 Logger.trace("Found item for wrong channel %s instead of %s", channels, self.channelId)
                 return None
@@ -790,7 +788,7 @@ class Channel(chn_class.Channel):
         for subtitle_info in subtitle_urls:
             language = subtitle_info.get("data", {}).get("language")
             language = languages.get(language, language)
-            if not language.lower() == self.language:
+            if language.lower() != self.language:
                 Logger.trace("Skipping subtitle for language: %s", language)
                 continue
             sub_format = subtitle_info.get("data", {}).get("format", "").lower()

@@ -101,10 +101,7 @@ class ParserData(object):
         """
 
         is_generic = self.is_generic_pre_processor()
-        generic = ""
-        if is_generic:
-            generic = "Generic "
-
+        generic = "Generic " if is_generic else ""
         if self.Name is not None:
             return "%sDataParser '%s' (Json=%s, Generic=%s, MatchType=%s, Logon=%s):\n" \
                    "Match:   %s\n" \

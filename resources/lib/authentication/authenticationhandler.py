@@ -80,7 +80,7 @@ class AuthenticationHandler(object):
         """
 
         store = AddonSettings.store(LOCAL)
-        store.set_setting("{}:authenticated_user".format(self._realm), username)
+        store.set_setting(f"{self._realm}:authenticated_user", username)
 
     def _get_current_user_in_settings(self):
         """ Retrieves the current user in the local settings.
@@ -90,4 +90,4 @@ class AuthenticationHandler(object):
         """
 
         store = AddonSettings.store(LOCAL)
-        return store.get_setting("{}:authenticated_user".format(self._realm), default=None)
+        return store.get_setting(f"{self._realm}:authenticated_user", default=None)

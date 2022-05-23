@@ -23,12 +23,7 @@ def run_addon():
         from resources.lib.logger import Logger
 
         # only append if there are no active sessions
-        if not SessionHelper.is_session_active():
-            # first call in the session, so do not append the log
-            append_log_file = False
-        else:
-            append_log_file = True
-
+        append_log_file = bool(SessionHelper.is_session_active())
         log_file = Logger.create_logger(os.path.join(Config.profileDir, Config.logFileNameAddon),
                                         Config.appName,
                                         append=append_log_file,
@@ -42,10 +37,7 @@ def run_addon():
         Logger.instance().minLogLevel = AddonSettings.get_log_level()
 
         use_caching = AddonSettings.cache_http_responses()
-        cache_dir = None
-        if use_caching:
-            cache_dir = Config.cacheDir
-
+        cache_dir = Config.cacheDir if use_caching else None
         ignore_ssl_errors = AddonSettings.ignore_ssl_errors()
         UriHandler.create_uri_handler(cache_dir=cache_dir,
                                       cookie_jar=os.path.join(Config.profileDir, "cookiejar.dat"),

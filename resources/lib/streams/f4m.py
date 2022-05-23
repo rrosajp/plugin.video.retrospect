@@ -43,7 +43,7 @@ class F4m(object):
                 if not base_url_logged:
                     Logger.trace("Using base_url %s for F4M", base_url)
                     base_url_logged = True
-                stream = "%s/%s" % (base_url, n[0])
+                stream = f"{base_url}/{n[0]}"
             else:
                 if not base_url_logged:
                     Logger.trace("Full url found in F4M")

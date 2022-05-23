@@ -190,7 +190,7 @@ class Channel(chn_class.Channel):
         items = []
         today = datetime.datetime.now()
         days = LanguageHelper.get_days_list()
-        for d in range(0, 7, 1):
+        for d in range(7):
             air_date = today - datetime.timedelta(d)
             Logger.trace("Adding item for: %s", air_date)
 
@@ -234,15 +234,16 @@ class Channel(chn_class.Channel):
         items = []
 
         specials = {
-            "https://www.goplay.be/api/programs/popular/{}".format(self.__channel_slug): (
+            f"https://www.goplay.be/api/programs/popular/{self.__channel_slug}": (
                 LanguageHelper.get_localized_string(LanguageHelper.Popular),
-                contenttype.TVSHOWS
+                contenttype.TVSHOWS,
             ),
             "#tvguide": (
                 LanguageHelper.get_localized_string(LanguageHelper.Recent),
-                contenttype.FILES
-            )
+                contenttype.FILES,
+            ),
         }
+
 
         for url, (title, content) in specials.items():
             item = MediaItem("\a.: {} :.".format(title), url)
@@ -294,7 +295,7 @@ class Channel(chn_class.Channel):
             return None
 
         title = result_set["title"]
-        url = "{}{}".format(self.baseUrl, result_set["link"])
+        url = f'{self.baseUrl}{result_set["link"]}'
         item = MediaItem(title, url)
         item.description = result_set.get("description")
         item.isGeoLocked = True
@@ -362,9 +363,7 @@ class Channel(chn_class.Channel):
             hero_json.json = {}
             return hero_json, items
 
-        # list the correct folder
-        current_list = [lst for lst in hero_playlists if lst["id"] == current]
-        if current_list:
+        if current_list := [lst for lst in hero_playlists if lst["id"] == current]:
             # we are listing a subfolder, put that one on index 0 and then also
             hero_playlists.insert(0, current_list[0])
             self.__no_clips = True
@@ -411,7 +410,7 @@ class Channel(chn_class.Channel):
 
         # Could be: title = result_set['episodeTitle']
         title = result_set['title']
-        url = "https://api.viervijfzes.be/content/{}".format(result_set['videoUuid'])
+        url = f"https://api.viervijfzes.be/content/{result_set['videoUuid']}"
         item = MediaItem(title, url)
         item.media_type = mediatype.EPISODE
         item.description = HtmlHelper.to_text(result_set.get("description").replace(">\r\n", ">"))
@@ -455,11 +454,11 @@ class Channel(chn_class.Channel):
         episode_title = result_set['episode_title']
         time_value = result_set["time_string"]
         if episode_title:
-            title = "{}: {} - {}".format(time_value, program_title, episode_title)
+            title = f"{time_value}: {program_title} - {episode_title}"
         else:
-            title = "{}: {}".format(time_value, program_title)
+            title = f"{time_value}: {program_title}"
         video_info = result_set["video_node"]
-        url = "{}{}".format(self.baseUrl, video_info["url"])
+        url = f'{self.baseUrl}{video_info["url"]}'
 
         item = MediaItem(title, url)
         item.media_type = mediatype.EPISODE
@@ -470,7 +469,7 @@ class Channel(chn_class.Channel):
 
         # 2021-01-27
         time_stamp = DateHelper.get_date_from_string(result_set["date_string"], date_format="%Y-%m-%d")
-        item.set_date(*time_stamp[0:6])
+        item.set_date(*time_stamp[:6])
 
         item.set_info_label("duration", result_set["duration"])
         if "episode_nr" in result_set and "season" in result_set \
@@ -502,11 +501,7 @@ class Channel(chn_class.Channel):
 
         item = chn_class.Channel.create_video_item(self, result_set)
 
-        # Set the correct url
-        # videoId = resultSet["videoid"]
-        # item.url = "https://api.viervijfzes.be/content/%s" % (videoId, )
-        time_stamp = result_set.get("timestamp")
-        if time_stamp:
+        if time_stamp := result_set.get("timestamp"):
             date_time = DateHelper.get_date_from_posix(int(result_set["timestamp"]))
             item.set_date(date_time.year, date_time.month, date_time.day, date_time.hour,
                           date_time.minute,
@@ -578,16 +573,15 @@ class Channel(chn_class.Channel):
         return self.__update_video(item, data)
 
     def __update_video(self, item, data):
-        if not item.url.startswith("https://api.viervijfzes.be/content/"):
-            regex = 'data-video-*id="([^"]+)'
-            m3u8_url = Regexer.do_regex(regex, data)[-1]
-            # we either have an URL now or an uuid
-        else:
-            m3u8_url = item.url.rsplit("/", 1)[-1]
+        m3u8_url = (
+            item.url.rsplit("/", 1)[-1]
+            if item.url.startswith("https://api.viervijfzes.be/content/")
+            else Regexer.do_regex('data-video-*id="([^"]+)', data)[-1]
+        )
 
         if ".m3u8" not in m3u8_url:
             Logger.info("Not a direct M3u8 file. Need to log in")
-            url = "https://api.viervijfzes.be/content/%s" % (m3u8_url, )
+            url = f"https://api.viervijfzes.be/content/{m3u8_url}"
 
             # We need to log in
             if not self.loggedOn:

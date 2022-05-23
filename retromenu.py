@@ -14,7 +14,7 @@ if len(sys.argv) < 2:
     XbmcWrapper.show_dialog(title, message)
 else:
     from resources.lib import menu
-    add_on_id, command = sys.argv[0:2]
+    add_on_id, command = sys.argv[:2]
 
     with menu.Menu(command) as m:
         if command == "queue":
@@ -25,7 +25,7 @@ else:
             xbmc.executebuiltin("Container.Refresh()")
         elif command == "hidechannel":
             m.hide_channel()
-        elif command == "cloak" or command == "uncloak":
+        elif command in ["cloak", "uncloak"]:
             m.toggle_cloak()
         elif command == "bitrate":
             m.set_bitrate()
@@ -50,4 +50,4 @@ else:
         elif command == "settings":
             m.show_settings()
         else:
-            raise IndexError("Missing command in sys.argv: {}".format(sys.argv))
+            raise IndexError(f"Missing command in sys.argv: {sys.argv}")

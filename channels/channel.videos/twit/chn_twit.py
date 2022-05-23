@@ -84,15 +84,13 @@ class Channel(chn_class.Channel):
 
         """
 
-        items = []
-
         item = MediaItem("\a.: TWiT.TV Live :.",
                          "http://iphone-streaming.ustream.tv/uhls/1524/streams/live/iphone/playlist.m3u8",
                          media_type=mediatype.VIDEO)
         item.complete = False
         item.isLive = True
 
-        items.append(item)
+        items = [item]
         return data, items
 
     def create_episode_item(self, result_set):
@@ -110,12 +108,12 @@ class Channel(chn_class.Channel):
         """
 
         # https://twit.tv/list/episodes?page=2&filter%5Bshows%5D=1635
-        url = "%s/%s" % (self.baseUrl, result_set["url"])
+        url = f'{self.baseUrl}/{result_set["url"]}'
         item = FolderItem(result_set["title"], url, content_type=contenttype.EPISODES, media_type=mediatype.TVSHOW)
 
         item.thumb = result_set["thumburl"]
         if not item.thumb.startswith("http"):
-            item.thumb = "%s%s" % (self.baseUrl, item.thumb)
+            item.thumb = f"{self.baseUrl}{item.thumb}"
         item.thumb = item.thumb.replace("coverart-small", "coverart")
         item.complete = True
         return item
@@ -136,8 +134,13 @@ class Channel(chn_class.Channel):
 
         Logger.debug("Starting create_page_item")
 
-        item = FolderItem(result_set[1], "{}/list/episodes{}".format(self.baseUrl, result_set[0]),
-                          content_type=contenttype.NONE, media_type=mediatype.PAGE)
+        item = FolderItem(
+            result_set[1],
+            f"{self.baseUrl}/list/episodes{result_set[0]}",
+            content_type=contenttype.NONE,
+            media_type=mediatype.PAGE,
+        )
+
         Logger.debug("Created '%s' for url %s", item.name, item.url)
         return item
 
@@ -164,7 +167,7 @@ class Channel(chn_class.Channel):
 
         url = result_set["url"]
         if not url.startswith("http"):
-            url = "%s%s" % (self.baseUrl, url)
+            url = f"{self.baseUrl}{url}"
         name = result_set["title"]
 
         item = MediaItem(name, url, media_type=mediatype.EPISODE)

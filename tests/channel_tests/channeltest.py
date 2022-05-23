@@ -59,14 +59,12 @@ class ChannelTest(unittest.TestCase):
                     self.assertGreaterEqual(len(items), expected_results)
                 return items
             except:
-                if retry > 0:
-                    Logger.error("Error on unittest attempt. Remaining: %d tries/try.", retry,
-                                 exc_info=True)
-                    retry -= 1
-                    time.sleep(5)
-                    continue
-                else:
+                if retry <= 0:
                     raise
+                Logger.error("Error on unittest attempt. Remaining: %d tries/try.", retry,
+                             exc_info=True)
+                retry -= 1
+                time.sleep(5)
 
     def _test_video_url(self, url, headers=None, retry=1):
         self.assertIsNotNone(self.channel)
@@ -81,20 +79,17 @@ class ChannelTest(unittest.TestCase):
                 self.assertTrue(item.complete)
                 return item
             except:
-                if retry > 0:
-                    Logger.error("Error on unittest attempt. Remaining: %d tries/try.", retry,
-                                 exc_info=True)
-                    retry -= 1
-                    time.sleep(5)
-                    continue
-                else:
+                if retry <= 0:
                     raise
+                Logger.error("Error on unittest attempt. Remaining: %d tries/try.", retry,
+                             exc_info=True)
+                retry -= 1
+                time.sleep(5)
 
     def _get_media_item(self, url, name=None):
         from resources.lib.mediaitem import MediaItem
 
-        item = MediaItem(name or "test_item", url, media_type=mediatype.FOLDER)
-        return item
+        return MediaItem(name or "test_item", url, media_type=mediatype.FOLDER)
 
     def _set_keyboard_input(self, *words):
         kb = xbmc.Keyboard()
